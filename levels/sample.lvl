@@ -1,0 +1,15 @@
+### Esempio di file per caricare un livello di Eidotanks ###
+
+
+# Questo è un commento
+
+# Dimensioni della mappa (larghezza per lunghezza)
+d 28 36
+
+# Numero di nemici
+e 4
+
+# Posizione sulla mappa di un tipo di ostacolo. Il numero indica il tipo di ostacolo
+o0 20 12
+o0 23 33
+o1 5 14
