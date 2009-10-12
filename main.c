@@ -183,9 +183,10 @@ void init(void)
 	userTank.userTreadR.pos[2] = 0.0f;
 
 	//carico i modelli
-
+	loadOBJ("obj/tank_camo.obj", 0); //fixare il forced mtl nell'objloader
 }
 
+//visualizzazione
 void display(void)
 {
 	float light0Position[] = {0.0f, 10.0f, 20.0f, 1.0f};
@@ -205,7 +206,21 @@ void display(void)
 	glLightfv(GL_LIGHT1, GL_POSITION, light1Position);
 	glLightfv(GL_LIGHT2, GL_POSITION, light2Position);
 
+	//disegno i modelli
+	drawOBJ(0);
+
 	glutSwapBuffers();
+}
+
+//lettura input
+void keyboard(unsigned char key, int x, int y)
+{
+	switch(key)
+	{
+	case 27:
+		exit(0);
+		break;
+	}
 }
 
 void idle(void)
@@ -224,7 +239,6 @@ void idle(void)
 
 int main (int argc, char** argv)
 {
-
 	glutInit( &argc, argv );
 	glutInitDisplayMode( GLUT_RGBA | GLUT_DOUBLE | GLUT_DEPTH | GLUT_ACCUM);
 
@@ -234,7 +248,7 @@ int main (int argc, char** argv)
 	glutDisplayFunc(display);
 	glutIdleFunc(idle);
 	glutReshapeFunc(reshape);
-	//glutKeyboardFunc(keyb);
+	glutKeyboardFunc(keyboard);
 
 
 	init();

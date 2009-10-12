@@ -92,6 +92,13 @@ int loadMTL(char* path, int id)
 	int loaded;
 	char line[100];
 
+	// inizializzo le stringhe
+	int i;
+	for (i=0; i<32; i++)
+	{
+		texturePath[i] = '\0';
+	}
+
 	FILE *fp = fopen(path,"r");
 
 	if (fp != NULL)
@@ -106,7 +113,6 @@ int loadMTL(char* path, int id)
 				printf("%d]", loadTGA(texturePath, id));
 
 				// reinizializzo le stringhe
-				int i;
 				for (i=0; i<32; i++)
 				{
 					texturePath[i] = '\0';
@@ -156,6 +162,14 @@ int loadOBJ(char* path, int id)
 
 	char mtllibName[32];
 	char mtllibPath[32];
+
+	// inizializzo le stringhe
+	int i;
+	for (i=0; i<32; i++)
+	{
+		mtllibName[i] = '\0';
+		mtllibPath[i] = '\0';
+	}
 
 	if (fp != NULL)
 	{
@@ -219,7 +233,6 @@ int loadOBJ(char* path, int id)
 				printf(" %d\n",loadMTL(mtllibPath, id));
 
 				// reinizializzo le stringhe
-				int i;
 				for (i=0; i<32; i++)
 				{
 					mtllibName[i] = '\0';
