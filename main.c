@@ -66,6 +66,8 @@ struct _tank
 	float mass;
 	float iperBoostAccumul;
 	float iperBoost;
+	bullets *bulletRoot;
+	int ammo;
 };
 typedef struct _tank tank;
 
@@ -85,6 +87,93 @@ tank userTank;
 float distanceFromCamera = 10.0f;
 
 //FUNZIONI
+
+//Abilita l'illuminazione della scena
+void lightOn(void)
+{
+	glEnable(GL_LIGHTING);
+	glEnable(GL_LIGHT0);
+}
+
+//Disabilita l'illuminazione della scena
+void lightOff(void)
+{
+	glDisable(GL_LIGHTING);
+	glDisable(GL_LIGHT0);
+}
+
+//Disabilita l'illuminzione e sposta in proiezione ortogonale
+void orthogonalStart (void) {
+	lightOff();
+
+	glMatrixMode(GL_PROJECTION);
+	glPushMatrix();
+	glLoadIdentity();
+	gluOrtho2D(0, WIDTH, 0, HEIGHT);
+	glScalef(1, -1, 1);
+	glTranslatef(0, -HEIGHT, 0);
+	glMatrixMode(GL_MODELVIEW);
+}
+
+//Ritorna in proiezione precedente e riabilita l'illuminazione
+void orthogonalEnd (void) {
+	glMatrixMode(GL_PROJECTION);
+	glPopMatrix();
+	glMatrixMode(GL_MODELVIEW);
+
+	lightOn();
+}
+
+void makeGrid(float lenght, float width, float nol)
+{
+	float l = lenght * 0.5;
+	float w = width  * 0.5;
+	float stepl = lenght/nol;
+	float stepw = width/nol;
+	int i;
+
+	for (i=0; i<=nol; i++)
+	{
+		glBegin(GL_LINES);
+		glNormal3f(0.0f,1.0f,0.0f);
+		glVertex3f(-w+(stepw*i),0.0f,-l);
+		glVertex3f(-w+(stepw*i),0.0f,l);
+		glEnd();
+		glBegin(GL_LINES);
+		glNormal3f(0.0f,1.0f,0.0f);
+		glVertex3f(-w,0.0f,-l+(stepl*i));
+		glVertex3f(w,0.0f,-l+(stepl*i));
+		glEnd();
+	}
+}
+
+void addBullet(bullets **root)
+{
+	bullets *b;
+	b = malloc(sizeof(bullets));
+	b->bullet.a[0] = 0.0f;
+	b->bullet.a[1] = 0.0f;
+	b->bullet.a[2] = 0.0f;
+	b->bullet.mass = 1.0f;
+	b->bullet.pos[0] = 0.0f;
+	b->bullet.pos[1] = 0.0f;
+	b->bullet.pos[2] = 0.0f;
+	b->bullet.radius = 1.0f;
+	b->bullet.v[0] = 0.0f;
+	b->bullet.v[1] = 0.0f;
+	b->bullet.v[2] = 0.0f;
+
+	b->next = *root;
+	*root = b;
+
+	printf("aggiunta pallottola");
+}
+
+void shoot(tank tankT)
+{
+	tankT.ammo--;
+	addBullet(tankT.bulletRoot);
+}
 
 //reshape
 void reshape ( int w, int h)
@@ -163,6 +252,8 @@ void init(void)
 	userTank.mass = 1.0f;
 	userTank.iperBoostAccumul = 0.0f;
 	userTank.iperBoost = 0.0f;
+//	userTank.bulletRoot = NULL;
+	userTank.ammo = 10;
 	//torretta
 	userTank.userTurret.pos[0] = 0.0f;
 	userTank.userTurret.pos[1] = 0.0f;
@@ -183,7 +274,7 @@ void init(void)
 	userTank.userTreadR.pos[2] = 0.0f;
 
 	//carico i modelli
-	loadOBJ("obj/tank_camo.obj", 0); //fixare il forced mtl nell'objloader
+	loadOBJ("obj/tank_camo.obj", 0);
 }
 
 //visualizzazione
@@ -207,7 +298,17 @@ void display(void)
 	glLightfv(GL_LIGHT2, GL_POSITION, light2Position);
 
 	//disegno i modelli
-	drawOBJ(0);
+
+	//GRIGLIA
+	lightOff();
+	makeGrid(100.0f,100.0f,20.0f);
+	lightOn();
+
+
+	glPushMatrix();
+		glTranslatef(userTank.pos[0], userTank.pos[1], userTank.pos[2]);
+		drawOBJ(0);
+	glPopMatrix();
 
 	glutSwapBuffers();
 }
@@ -217,15 +318,22 @@ void keyboard(unsigned char key, int x, int y)
 {
 	switch(key)
 	{
-	case 27:
+	case 27: //Esc
 		exit(0);
+		break;
+
+	case 'w':
+		userTank.throttle = -10.0f;
+		break;
+
+	case 32: //Space
+		shoot(userTank);
 		break;
 	}
 }
 
 void idle(void)
 {
-	float deltaTeta;
 	struct timeval newTime;
 
 	gettimeofday(&newTime, NULL);
@@ -233,8 +341,16 @@ void idle(void)
 	deltaT = (((double)(newTime.tv_sec) + (double)(newTime.tv_usec)/1000000.0) -
 			((double)(old.tv_sec) + (double)(old.tv_usec)/1000000.0));
 
-	glutPostRedisplay();
+	old.tv_sec = newTime.tv_sec;
+	old.tv_usec = newTime.tv_usec;
 
+	userTank.v[2] += userTank.throttle * deltaT;
+	userTank.pos[2] += userTank.v[2] * deltaT;
+//	printf("%f\n", userTank.v[2]);
+
+	userTank.throttle = 0.0f;
+
+	glutPostRedisplay();
 }
 
 int main (int argc, char** argv)
