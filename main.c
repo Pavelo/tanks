@@ -10,17 +10,19 @@
 //COSTANTI
 #define WIDTH 800
 #define HEIGHT 600
+#define G 9.81f
 
 //STRUTTURE
 //struttura palla di cannone
-typedef struct
+struct _myBullet
 {
 	float radius;
 	float pos[3];
 	float v[3];
 	float a[3];
 	float mass;
-} myBullet;
+};
+typedef struct _myBullet myBullet;
 
 //struttura palle di cannone
 struct _bullets
@@ -85,6 +87,9 @@ int blurActive = 0;
 //carro armato
 tank userTank;
 float distanceFromCamera = 10.0f;
+int shot = 0;
+float t = 0.0f;
+myBullet bull;
 
 //FUNZIONI
 
@@ -172,7 +177,28 @@ void addBullet(bullets **root)
 void shoot(tank tankT)
 {
 	tankT.ammo--;
-	addBullet(tankT.bulletRoot);
+//	addBullet(tankT.bulletRoot);
+
+	shot = 1;
+
+	printf("shootoo!");
+
+}
+
+//traiettoria del proiettile
+void flight(void)
+{
+//	myBullet b;
+	// velocitˆ iniziale va derivata dalla potenza e inclinazione del cannone
+	bull.v[0] = 0.0f;
+	bull.v[1] = 15.0f;
+	bull.a[1] = -G;
+//	t += deltaT;
+//	bull.pos[0] = bull.v[0] * deltaT;
+//	bull.pos[1] = bull.v[1] * deltaT - 0.5f * G * deltaT * deltaT;
+
+
+//	return b;
 }
 
 //reshape
@@ -275,6 +301,7 @@ void init(void)
 
 	//carico i modelli
 	loadOBJ("obj/tank_camo.obj", 0);
+	loadOBJ("obj/rockball.obj", 1);
 }
 
 //visualizzazione
@@ -310,6 +337,14 @@ void display(void)
 		drawOBJ(0);
 	glPopMatrix();
 
+//	if (shot == 1)
+	//{
+		glPushMatrix();
+			glTranslatef(bull.pos[0], bull.pos[1], bull.pos[2]);
+			drawOBJ(1);
+		glPopMatrix();
+	//}
+
 	glutSwapBuffers();
 }
 
@@ -327,7 +362,7 @@ void keyboard(unsigned char key, int x, int y)
 		break;
 
 	case 32: //Space
-		shoot(userTank);
+		flight();
 		break;
 	}
 }
@@ -346,7 +381,14 @@ void idle(void)
 
 	userTank.v[2] += userTank.throttle * deltaT;
 	userTank.pos[2] += userTank.v[2] * deltaT;
-//	printf("%f\n", userTank.v[2]);
+
+	int i;
+		for(i=0;i<3;i++)
+		{
+			//MOTO UNIF ACC -> S = S' + v*t + 1/2*a*t^2
+			bull.pos[i] = bull.pos[i] + bull.v[i]*deltaT;
+			bull.v[i] = bull.v[i] + bull.a[i]*deltaT;
+		}
 
 	userTank.throttle = 0.0f;
 
