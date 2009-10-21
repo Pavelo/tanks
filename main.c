@@ -1,20 +1,29 @@
-//#include <GLUT/gl.h>
+//CAMBIAMENTI
+//fisica in idle
+//enginepower nella struttura,nell'init e nei tasti
+//aggiunti tasti per la rotazione
+//aggiunta variabile frictionCoefficient
+//aggiunta frenata in tasti
+//aggiunta visuale torretta in tasti,camera,variabili(turretView)
+//cingoli caricati esternamente,aggiunte posizioni nell'init,variabile x l'animazione e nella display
+
 #include <GLUT/glut.h>
+//#include <GL/glut.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <time.h>
 #include <sys/time.h>
 #include <math.h>
+//#include <windows.h>
 #include "tga.h"
 
 //COSTANTI
 #define WIDTH 800
 #define HEIGHT 600
-#define G 9.81f
 
 //STRUTTURE
 //struttura palla di cannone
-struct _myBullet
+struct _bullet
 {
 	float radius;
 	float pos[3];
@@ -22,12 +31,12 @@ struct _myBullet
 	float a[3];
 	float mass;
 };
-typedef struct _myBullet myBullet;
+typedef struct _bullet bullet;
 
 //struttura palle di cannone
 struct _bullets
 {
-	myBullet bullet;
+	bullet bullet;
 	struct _bullets *next;
 };
 typedef struct _bullets bullets;
@@ -64,6 +73,7 @@ struct _tank
 	tread userTreadL;
 	tread userTreadR;
 	turret userTurret;
+	float enginePower;
 	float throttle;
 	float mass;
 	float iperBoostAccumul;
@@ -86,10 +96,11 @@ float blur = 0.2f;
 int blurActive = 0;
 //carro armato
 tank userTank;
+float frictionCoeff = 0.8f;
 float distanceFromCamera = 10.0f;
-int shot = 0;
-float t = 0.0f;
-myBullet bull;
+int turretView = 0;
+
+int animation = 0;
 
 //FUNZIONI
 
@@ -166,7 +177,7 @@ void addBullet(bullets **root)
 	b->bullet.radius = 1.0f;
 	b->bullet.v[0] = 0.0f;
 	b->bullet.v[1] = 0.0f;
-	b->bullet.v[2] = 0.0f;
+	b->bullet.v[2] = 5.0f;
 
 	b->next = *root;
 	*root = b;
@@ -174,31 +185,28 @@ void addBullet(bullets **root)
 	printf("aggiunta pallottola");
 }
 
-void shoot(tank tankT)
+void shoot(tank *tankT)
 {
-	tankT.ammo--;
-//	addBullet(tankT.bulletRoot);
+	tankT->ammo--;
+	//addBullet(&(tankT->bulletRoot));
+	bullets *b;
+	b = malloc(sizeof(bullets));
+	b->bullet.a[0] = 0.0f;
+	b->bullet.a[1] = -9.8f;
+	b->bullet.a[2] = 0.0f;
+	b->bullet.mass = 1.0f;
+	b->bullet.pos[0] = tankT->pos[0];
+	b->bullet.pos[1] = tankT->pos[1];
+	b->bullet.pos[2] = tankT->pos[2];
+	b->bullet.radius = 1.0f;
+	b->bullet.v[0] = 5.0f * sin((tankT->rot)*M_PI/180.0f) - tankT->v[0];
+	b->bullet.v[1] = 15.0f ;
+	b->bullet.v[2] = 5.0f * cos((tankT->rot)*M_PI/180.0f) - tankT->v[2];
 
-	shot = 1;
+	b->next = tankT->bulletRoot;
+	tankT->bulletRoot = b;
 
-	printf("shootoo!");
-
-}
-
-//traiettoria del proiettile
-void flight(void)
-{
-//	myBullet b;
-	// velocitˆ iniziale va derivata dalla potenza e inclinazione del cannone
-	bull.v[0] = 0.0f;
-	bull.v[1] = 15.0f;
-	bull.a[1] = -G;
-//	t += deltaT;
-//	bull.pos[0] = bull.v[0] * deltaT;
-//	bull.pos[1] = bull.v[1] * deltaT - 0.5f * G * deltaT * deltaT;
-
-
-//	return b;
+	printf("aggiunta pallottola");
 }
 
 //reshape
@@ -274,11 +282,12 @@ void init(void)
 	userTank.a[1] = 0.0f;
 	userTank.a[2] = 0.0f;
 	userTank.rot  = 0.0f;
+	userTank.enginePower = 0.0f;
 	userTank.throttle = 0.0f;
 	userTank.mass = 1.0f;
 	userTank.iperBoostAccumul = 0.0f;
 	userTank.iperBoost = 0.0f;
-//	userTank.bulletRoot = NULL;
+	userTank.bulletRoot = NULL;
 	userTank.ammo = 10;
 	//torretta
 	userTank.userTurret.pos[0] = 0.0f;
@@ -291,17 +300,20 @@ void init(void)
 	userTank.userTurret.tankCannon.pos[2] = 0.0f;
 	userTank.userTurret.tankCannon.rot = 0.0f;
 	//cingolo sx
-	userTank.userTreadL.pos[0] = 0.0f;
-	userTank.userTreadL.pos[1] = 0.0f;
-	userTank.userTreadL.pos[2] = 0.0f;
+	userTank.userTreadL.pos[0] = -0.8f;
+	userTank.userTreadL.pos[1] = 0.43f;
+	userTank.userTreadL.pos[2] = 0.62f;
 	//cingolo dx
-	userTank.userTreadR.pos[0] = 0.0f;
-	userTank.userTreadR.pos[1] = 0.0f;
-	userTank.userTreadR.pos[2] = 0.0f;
+	userTank.userTreadR.pos[0] = 0.8f;
+	userTank.userTreadR.pos[1] = 0.43f;
+	userTank.userTreadR.pos[2] = 0.62f;
 
 	//carico i modelli
 	loadOBJ("obj/tank_camo.obj", 0);
-	loadOBJ("obj/rockball.obj", 1);
+	loadOBJ("obj/tread.obj", 1);
+	loadOBJ("obj/tread2.obj", 2);
+	loadOBJ("obj/tread3.obj", 3);
+	loadOBJ("obj/tank_camo.obj", 4);
 }
 
 //visualizzazione
@@ -314,12 +326,28 @@ void display(void)
 	glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	glLoadIdentity();
 
+    //third person view [turretView==0]
+    //-camera is distant distanceFromCamera multiplied by sin or cos on dependency to tank rotation
+    //-from tank position
+    //third person view [turretView==0]
+    //-camera is distant distanceFromCamera multiplied by sin or cos on dependency to tank rotation
+    //-from tank position
+    if(turretView==0) //third person view
+    {
 	gluLookAt(userTank.pos[0] + distanceFromCamera*sin(userTank.rot*M_PI/180.0f),//Eye x
 			3.5f,//Eye y
 			userTank.pos[2] + distanceFromCamera*cos(userTank.rot*M_PI/180.0f),//Eye z
 			userTank.pos[0], 3.0f,userTank.pos[2],//At
 			0.0f, 1.0f, 0.0f);//Up
-
+    }
+    else //turret view
+    {
+          gluLookAt(userTank.pos[0],//Eye x
+			2.0f,//Eye y
+			userTank.pos[2],//Eye z
+			userTank.pos[0] - 5.0f*sin((userTank.rot+userTank.userTurret.rot)*M_PI/180.0f), 1.0f + sin(userTank.userTurret.tankCannon.rot*M_PI/180.0f),userTank.pos[2] - 5.0f*cos((userTank.rot+userTank.userTurret.rot)*M_PI/180.0f),//At
+			0.0f, 1.0f, 0.0f);//Up
+    }
 	glLightfv(GL_LIGHT0, GL_POSITION, light0Position);
 	glLightfv(GL_LIGHT1, GL_POSITION, light1Position);
 	glLightfv(GL_LIGHT2, GL_POSITION, light2Position);
@@ -331,19 +359,53 @@ void display(void)
 	makeGrid(100.0f,100.0f,20.0f);
 	lightOn();
 
-
+    //CARRO ARMATO UTENTE
 	glPushMatrix();
 		glTranslatef(userTank.pos[0], userTank.pos[1], userTank.pos[2]);
+		glRotatef(userTank.rot,0.0f,1.0f,0.0f);
+		glPushMatrix();
+		   glTranslatef(userTank.userTreadR.pos[0],userTank.userTreadR.pos[1],userTank.userTreadR.pos[2]);
+           glRotatef(90.0f,0.0f,1.0f,0.0f);
+           if(animation<10)
+           drawOBJ(1);
+           else if(animation<20)
+           drawOBJ(2);
+           else if(animation<30)
+           drawOBJ(3);
+           else
+           {
+           drawOBJ(1);
+           animation = 0;
+           }
+        glPopMatrix();
+		glPushMatrix();
+		   glTranslatef(userTank.userTreadL.pos[0],userTank.userTreadL.pos[1],userTank.userTreadL.pos[2]);
+           glRotatef(90.0f,0.0f,1.0f,0.0f);
+           if(animation<10)
+           drawOBJ(1);
+           else if(animation<20)
+           drawOBJ(2);
+           else if(animation<30)
+           drawOBJ(3);
+           else
+           {
+           drawOBJ(1);
+           animation = 0;
+           }
+        glPopMatrix();
 		drawOBJ(0);
 	glPopMatrix();
 
-//	if (shot == 1)
-	//{
-		glPushMatrix();
-			glTranslatef(bull.pos[0], bull.pos[1], bull.pos[2]);
-			drawOBJ(1);
-		glPopMatrix();
-	//}
+	//PROIETTILI
+	bullets *p;
+	//addBullet(&(userTank.bulletRoot));
+	for(p=userTank.bulletRoot; p!=NULL; p=p->next)
+	{
+        glPushMatrix();
+           glTranslatef(p->bullet.pos[0],p->bullet.pos[1],p->bullet.pos[2]);
+           glutSolidSphere(1.0f, 20, 20);
+        glPopMatrix();
+    }
 
 	glutSwapBuffers();
 }
@@ -356,13 +418,51 @@ void keyboard(unsigned char key, int x, int y)
 	case 27: //Esc
 		exit(0);
 		break;
-
-	case 'w':
-		userTank.throttle = -10.0f;
+	case 'w': //forward
+		userTank.enginePower = 100.0f;
+		break;
+	case 's': //back
+		userTank.enginePower = -100.0f;
+		break;
+    case 'a': //left
+		if(userTank.v[2]==0.0f)
+		{
+            userTank.rot += 1.5f;
+        }
+		break;
+    case 'd': //right
+		if(userTank.v[2]==0.0f)
+		{
+            userTank.rot -= 1.5f;
+        }
+		break;
+    case 't': //enable/disable turret view
+		if(turretView==0)
+            turretView = 1;
+        else
+            turretView = 0;
+		break;
+    case 'c': //turret right
+        userTank.userTurret.rot -= 1.5f;
 		break;
 
+    case 'z': //turret left
+        userTank.userTurret.rot += 1.5f;
+		break;
+    case 'e': //cannon up
+        if(userTank.userTurret.tankCannon.rot<60.0f)
+        userTank.userTurret.tankCannon.rot += 1.5f;
+		break;
+    case 'q': //cannon down
+        if(userTank.userTurret.tankCannon.rot>0.0f)
+        userTank.userTurret.tankCannon.rot -= 1.5f;
+		break;
+    case 35: //Brakes
+		userTank.v[0] *= 0.5f;
+		userTank.v[2] *= 0.5f;
+		break;
 	case 32: //Space
-		flight();
+		shoot(&userTank);
 		break;
 	}
 }
@@ -379,18 +479,68 @@ void idle(void)
 	old.tv_sec = newTime.tv_sec;
 	old.tv_usec = newTime.tv_usec;
 
-	userTank.v[2] += userTank.throttle * deltaT;
-	userTank.pos[2] += userTank.v[2] * deltaT;
+    //calculating friction force [Fk = fC * g * m]
+    float frictionForce = 9.8f * frictionCoeff * userTank.mass;
+    float speed = userTank.v[0]*sin(userTank.rot*M_PI/180.0f) + userTank.v[2]*cos(userTank.rot*M_PI/180.0f);
+    if(speed>=-0.1f & speed<=0.1f & userTank.enginePower<=0.0f)
+    {
+       frictionForce = 0.0f;
+    }
+    else if(speed<-0.1)
+    {
+       frictionForce = 9.8f * frictionCoeff * userTank.mass;
+    }
+    else
+    {
+       frictionForce = (9.8f * frictionCoeff * userTank.mass)*-1;
+    }
 
-	int i;
-		for(i=0;i<3;i++)
-		{
-			//MOTO UNIF ACC -> S = S' + v*t + 1/2*a*t^2
-			bull.pos[i] = bull.pos[i] + bull.v[i]*deltaT;
-			bull.v[i] = bull.v[i] + bull.a[i]*deltaT;
-		}
+    //stop from continous movement
+    if(speed>=-0.1f & speed<=0.1f)
+    {
+       userTank.v[0]=0.0f;
+       userTank.v[2]=0.0f;
+    }
 
-	userTank.throttle = 0.0f;
+    //calculating throttle [a = (Fe - Fk) / m]
+    userTank.a[0] = ((userTank.enginePower - frictionForce)*sin(userTank.rot*M_PI/180.0f)/userTank.mass)*-1;
+    userTank.a[2] = ((userTank.enginePower - frictionForce)*cos(userTank.rot*M_PI/180.0f)/userTank.mass)*-1;
+    userTank.throttle = ((userTank.enginePower - frictionForce)/userTank.mass)*-1;
+
+    // S = So + v*t
+	//userTank.v[2] += userTank.throttle * deltaT;
+	//userTank.pos[2] += userTank.v[2] * deltaT;
+
+	// S = So + vo*t + a*t*t*0.5
+	userTank.pos[0] += userTank.v[0]*deltaT + userTank.a[0]*deltaT*deltaT*0.5f;
+	userTank.v[0] += userTank.a[0] * deltaT;
+	userTank.pos[2] += userTank.v[2]*deltaT + userTank.a[2]*deltaT*deltaT*0.5f;
+	userTank.v[2] += userTank.a[2] * deltaT;
+
+	userTank.enginePower = 0.0f;
+
+	//FISICA PALLOTTOLE
+	bullets *p;
+	//addBullet(&(userTank.bulletRoot));
+	for(p=userTank.bulletRoot; p!=NULL; p=p->next)
+	{
+        int j;
+        for(j=0;j<3;j++)
+        {
+            if(j==1)
+            p->bullet.pos[j] += p->bullet.v[j]*deltaT;
+            else
+            p->bullet.pos[j] -= p->bullet.v[j]*deltaT;
+            p->bullet.v[j] += p->bullet.a[j]*deltaT;
+        }
+
+    }
+
+	//animation settings
+	if(fabs(speed)<6.0f)
+	animation += 1*fabs(speed)*0.5;
+	else
+	animation += 3;
 
 	glutPostRedisplay();
 }
