@@ -403,7 +403,7 @@ void display(void)
 	{
         glPushMatrix();
            glTranslatef(p->bullet.pos[0],p->bullet.pos[1],p->bullet.pos[2]);
-           glutSolidSphere(1.0f, 20, 20);
+           glutSolidSphere(0.2f, 20, 20);
         glPopMatrix();
     }
 
