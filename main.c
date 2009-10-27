@@ -16,6 +16,9 @@
 #include <math.h>
 //#include <windows.h>
 #include "tga.h"
+//#include "levelLoader.c"
+
+//TODO: creare un main.h con le palle!
 
 //COSTANTI
 #define WIDTH 800
@@ -314,6 +317,11 @@ void init(void)
 	loadOBJ("obj/tread2.obj", 2);
 	loadOBJ("obj/tread3.obj", 3);
 	loadOBJ("obj/tank_camo.obj", 4);
+
+	//carico il livello
+	map* my = loadLevel("levels/sample.lvl");
+//	printf("mappa da %dx%d\nci sono %d nemici\nil primo ostacolo  di tipo %d (non  di farina, per˜! XD)\n", my->lenght, my->width, my->enemies, my->obs[0].type);
+
 }
 
 //visualizzazione
