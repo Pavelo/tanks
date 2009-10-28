@@ -16,9 +16,8 @@
 #include <math.h>
 //#include <windows.h>
 #include "tga.h"
-//#include "levelLoader.c"
-
-//TODO: creare un main.h con le palle!
+#include "levelLoader.h"
+#include "objLoader.h"
 
 //COSTANTI
 #define WIDTH 800
@@ -102,7 +101,8 @@ tank userTank;
 float frictionCoeff = 0.8f;
 float distanceFromCamera = 10.0f;
 int turretView = 0;
-
+int fixedView  = 0;
+map *levelMap;
 int animation = 0;
 
 //FUNZIONI
@@ -111,14 +111,12 @@ int animation = 0;
 void lightOn(void)
 {
 	glEnable(GL_LIGHTING);
-	glEnable(GL_LIGHT0);
 }
 
 //Disabilita l'illuminazione della scena
 void lightOff(void)
 {
 	glDisable(GL_LIGHTING);
-	glDisable(GL_LIGHT0);
 }
 
 //Disabilita l'illuminzione e sposta in proiezione ortogonale
@@ -166,50 +164,25 @@ void makeGrid(float lenght, float width, float nol)
 	}
 }
 
-void addBullet(bullets **root)
-{
-	bullets *b;
-	b = malloc(sizeof(bullets));
-	b->bullet.a[0] = 0.0f;
-	b->bullet.a[1] = 0.0f;
-	b->bullet.a[2] = 0.0f;
-	b->bullet.mass = 1.0f;
-	b->bullet.pos[0] = 0.0f;
-	b->bullet.pos[1] = 0.0f;
-	b->bullet.pos[2] = 0.0f;
-	b->bullet.radius = 1.0f;
-	b->bullet.v[0] = 0.0f;
-	b->bullet.v[1] = 0.0f;
-	b->bullet.v[2] = 5.0f;
-
-	b->next = *root;
-	*root = b;
-
-	printf("aggiunta pallottola");
-}
-
 void shoot(tank *tankT)
 {
 	tankT->ammo--;
-	//addBullet(&(tankT->bulletRoot));
 	bullets *b;
 	b = malloc(sizeof(bullets));
 	b->bullet.a[0] = 0.0f;
 	b->bullet.a[1] = -9.8f;
 	b->bullet.a[2] = 0.0f;
 	b->bullet.mass = 1.0f;
-	b->bullet.pos[0] = tankT->pos[0];
-	b->bullet.pos[1] = tankT->pos[1];
-	b->bullet.pos[2] = tankT->pos[2];
+	b->bullet.pos[0] = tankT->pos[0] + (-0.83f + tankT->userTurret.pos[2] + tankT->userTurret.tankCannon.pos[2])* sin((tankT->rot+tankT->userTurret.rot)*M_PI/180.0f);
+	b->bullet.pos[1] = tankT->pos[1] + tankT->userTurret.pos[1] + tankT->userTurret.tankCannon.pos[1] + 2.2f*sin((tankT->userTurret.tankCannon.rot)*M_PI/180.0f);
+	b->bullet.pos[2] = tankT->pos[2] + (-0.83f + tankT->userTurret.pos[2] + tankT->userTurret.tankCannon.pos[2])* cos((tankT->rot+tankT->userTurret.rot)*M_PI/180.0f);
 	b->bullet.radius = 1.0f;
-	b->bullet.v[0] = 5.0f * sin((tankT->rot)*M_PI/180.0f) - tankT->v[0];
-	b->bullet.v[1] = 15.0f ;
-	b->bullet.v[2] = 5.0f * cos((tankT->rot)*M_PI/180.0f) - tankT->v[2];
+	b->bullet.v[0] = 50.0f * sin((tankT->rot+tankT->userTurret.rot)*M_PI/180.0f) - tankT->v[0];
+	b->bullet.v[1] = 12.0f * sin((tankT->userTurret.tankCannon.rot)*M_PI/180.0f);
+	b->bullet.v[2] = 50.0f * cos((tankT->rot+tankT->userTurret.rot)*M_PI/180.0f) - tankT->v[2];
 
 	b->next = tankT->bulletRoot;
 	tankT->bulletRoot = b;
-
-	printf("aggiunta pallottola");
 }
 
 //reshape
@@ -220,7 +193,7 @@ void reshape ( int w, int h)
 
 	glViewport(0, 0, w, h);
 	ar = (float)w/(float)h;
-	gluPerspective(45.0, ar, 0.2f, 100.0f);
+	gluPerspective(45.0, ar, 0.2f, 300.0f);
 
 
 	glMatrixMode(GL_MODELVIEW);
@@ -242,7 +215,7 @@ void init(void)
 	glLightfv(GL_LIGHT0, GL_AMBIENT, ambient);
 	glLightfv(GL_LIGHT0, GL_DIFFUSE, diffuse);
 	glLightfv(GL_LIGHT0, GL_SPECULAR, specular);
-	glEnable(GL_LIGHT0);
+	//glEnable(GL_LIGHT0);
 
 	glLightfv(GL_LIGHT1, GL_AMBIENT, ambient);
 	glLightfv(GL_LIGHT1, GL_DIFFUSE, diffuse);
@@ -252,7 +225,7 @@ void init(void)
 	glLightfv(GL_LIGHT2, GL_AMBIENT, ambient);
 	glLightfv(GL_LIGHT2, GL_DIFFUSE, diffuse);
 	glLightfv(GL_LIGHT2, GL_SPECULAR, specular);
-	glEnable(GL_LIGHT2);
+	//glEnable(GL_LIGHT2);
 
 	// da usare solo insieme a glColor per definire un colore indipendente dalle sorgenti di luce!
 	//	glColorMaterial(GL_FRONT, GL_DIFFUSE);
@@ -278,6 +251,9 @@ void init(void)
 	//definizione strutture
 	//carro armato
 	userTank.scale = 1.0f;
+	userTank.pos[0] = 0.0f;
+	userTank.pos[1] = 1.0f;
+	userTank.pos[2] = 0.0f;
 	userTank.v[0] = 0.0f;
 	userTank.v[1] = 0.0f;
 	userTank.v[2] = 0.0f;
@@ -294,42 +270,43 @@ void init(void)
 	userTank.ammo = 10;
 	//torretta
 	userTank.userTurret.pos[0] = 0.0f;
-	userTank.userTurret.pos[1] = 0.0f;
+	userTank.userTurret.pos[1] = 0.72f;
 	userTank.userTurret.pos[2] = 0.0f;
 	userTank.userTurret.rot = 0.0f;
 	//cannone
 	userTank.userTurret.tankCannon.pos[0] = 0.0f;
-	userTank.userTurret.tankCannon.pos[1] = 0.0f;
-	userTank.userTurret.tankCannon.pos[2] = 0.0f;
+	userTank.userTurret.tankCannon.pos[1] = -0.05f;
+	userTank.userTurret.tankCannon.pos[2] = -2.2f;
 	userTank.userTurret.tankCannon.rot = 0.0f;
 	//cingolo sx
 	userTank.userTreadL.pos[0] = -0.8f;
-	userTank.userTreadL.pos[1] = 0.43f;
+	userTank.userTreadL.pos[1] = -0.06f;
 	userTank.userTreadL.pos[2] = 0.62f;
 	//cingolo dx
 	userTank.userTreadR.pos[0] = 0.8f;
-	userTank.userTreadR.pos[1] = 0.43f;
+	userTank.userTreadR.pos[1] = -0.06f;
 	userTank.userTreadR.pos[2] = 0.62f;
 
 	//carico i modelli
-	loadOBJ("obj/tank_camo.obj", 0);
+	loadOBJ("obj/tank_body.obj", 0);
 	loadOBJ("obj/tread.obj", 1);
 	loadOBJ("obj/tread2.obj", 2);
 	loadOBJ("obj/tread3.obj", 3);
-	loadOBJ("obj/tank_camo.obj", 4);
+	loadOBJ("obj/tank_turret.obj", 4);
+	loadOBJ("obj/tank_cannon.obj", 5);
+	loadOBJ("obj/skyl.obj", 6);
+	loadOBJ("obj/tank_body.obj", 7);
 
 	//carico il livello
-	map* my = loadLevel("levels/sample.lvl");
-//	printf("mappa da %dx%d\nci sono %d nemici\nil primo ostacolo  di tipo %d (non  di farina, per˜! XD)\n", my->lenght, my->width, my->enemies, my->obs[0].type);
-
+	levelMap = loadLevel("levels/sample.lvl");
 }
 
 //visualizzazione
 void display(void)
 {
-	float light0Position[] = {0.0f, 10.0f, 20.0f, 1.0f};
-	float light1Position[] = {20.0f, -10.0f, 0.0f, 1.0f};
-	float light2Position[] = {-20.0f, 0.0f, -20.0f, 1.0f};
+	float light0Position[] = {0.0f, 70.0f, 0.0f, 1.0f};
+	float light1Position[] = {0.0f, 10.0f, 0.0f, 1.0f};
+	float light2Position[] = {-20.0f, 0.0f, 0.0f, 1.0f};
 
 	glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	glLoadIdentity();
@@ -340,7 +317,15 @@ void display(void)
     //third person view [turretView==0]
     //-camera is distant distanceFromCamera multiplied by sin or cos on dependency to tank rotation
     //-from tank position
-    if(turretView==0) //third person view
+    if(fixedView==1) //fixed view
+    {
+	gluLookAt(userTank.pos[0],//Eye x
+			3.5f,//Eye y
+			userTank.pos[2] + distanceFromCamera,//Eye z
+			userTank.pos[0], 3.0f,userTank.pos[2],//At
+			0.0f, 1.0f, 0.0f);//Up
+    }
+    else if(turretView==0) //third person view
     {
 	gluLookAt(userTank.pos[0] + distanceFromCamera*sin(userTank.rot*M_PI/180.0f),//Eye x
 			3.5f,//Eye y
@@ -350,15 +335,16 @@ void display(void)
     }
     else //turret view
     {
-          gluLookAt(userTank.pos[0],//Eye x
-			2.0f,//Eye y
-			userTank.pos[2],//Eye z
-			userTank.pos[0] - 5.0f*sin((userTank.rot+userTank.userTurret.rot)*M_PI/180.0f), 1.0f + sin(userTank.userTurret.tankCannon.rot*M_PI/180.0f),userTank.pos[2] - 5.0f*cos((userTank.rot+userTank.userTurret.rot)*M_PI/180.0f),//At
+          gluLookAt(userTank.pos[0] + 1.0f*sin((userTank.rot+userTank.userTurret.rot)*M_PI/180.0f),//Eye x
+			2.5f,//Eye y
+			userTank.pos[2] + 1.0f*cos((userTank.rot+userTank.userTurret.rot)*M_PI/180.0f),//Eye z
+			userTank.pos[0] - 5.0f*sin((userTank.rot+userTank.userTurret.rot)*M_PI/180.0f), 2.5f + sin(userTank.userTurret.tankCannon.rot*M_PI/180.0f),userTank.pos[2] - 5.0f*cos((userTank.rot+userTank.userTurret.rot)*M_PI/180.0f),//At
 			0.0f, 1.0f, 0.0f);//Up
     }
-	glLightfv(GL_LIGHT0, GL_POSITION, light0Position);
+
+	//glLightfv(GL_LIGHT0, GL_POSITION, light0Position);
 	glLightfv(GL_LIGHT1, GL_POSITION, light1Position);
-	glLightfv(GL_LIGHT2, GL_POSITION, light2Position);
+	//glLightfv(GL_LIGHT2, GL_POSITION, light2Position);
 
 	//disegno i modelli
 
@@ -371,6 +357,20 @@ void display(void)
 	glPushMatrix();
 		glTranslatef(userTank.pos[0], userTank.pos[1], userTank.pos[2]);
 		glRotatef(userTank.rot,0.0f,1.0f,0.0f);
+		//turret
+		glPushMatrix();
+		   glTranslatef(userTank.userTurret.pos[0],userTank.userTurret.pos[1],userTank.userTurret.pos[2]);
+           glRotatef(userTank.userTurret.rot,0.0f,1.0f,0.0f);
+              //cannon
+		      glPushMatrix();
+		      glTranslatef(userTank.userTurret.tankCannon.pos[0],userTank.userTurret.tankCannon.pos[1],userTank.userTurret.tankCannon.pos[2]+1.0f);
+              glRotatef(userTank.userTurret.tankCannon.rot,1.0f,0.0f,0.0f);
+              glTranslatef(0.0f,0.0f,-1.0f);
+              drawOBJ(5);
+           glPopMatrix();
+           drawOBJ(4);
+        glPopMatrix();
+        //right tread
 		glPushMatrix();
 		   glTranslatef(userTank.userTreadR.pos[0],userTank.userTreadR.pos[1],userTank.userTreadR.pos[2]);
            glRotatef(90.0f,0.0f,1.0f,0.0f);
@@ -386,6 +386,7 @@ void display(void)
            animation = 0;
            }
         glPopMatrix();
+        //left tread
 		glPushMatrix();
 		   glTranslatef(userTank.userTreadL.pos[0],userTank.userTreadL.pos[1],userTank.userTreadL.pos[2]);
            glRotatef(90.0f,0.0f,1.0f,0.0f);
@@ -401,19 +402,35 @@ void display(void)
            animation = 0;
            }
         glPopMatrix();
+        //tank body
 		drawOBJ(0);
 	glPopMatrix();
 
-	//PROIETTILI
 	bullets *p;
-	//addBullet(&(userTank.bulletRoot));
+	//float kkk = 0.0f;
 	for(p=userTank.bulletRoot; p!=NULL; p=p->next)
-	{
+    {
+        //proiettile
         glPushMatrix();
            glTranslatef(p->bullet.pos[0],p->bullet.pos[1],p->bullet.pos[2]);
            glutSolidSphere(0.2f, 20, 20);
         glPopMatrix();
+        /*glPushMatrix(); disegna sfere per controllare cancellazione da struttura corretta
+           glTranslatef(2.0f*kkk,0.0f,0.0f);
+           glutSolidSphere(1.2f, 20, 20);
+        glPopMatrix();
+        kkk += 1.0f;
+        */
     }
+
+    //LANDSCAPE
+	lightOff();
+	glPushMatrix();
+		glScalef(150.0f, 150.0f, 150.0f);
+		drawOBJ(6);
+	glPopMatrix();
+	lightOn();
+
 
 	glutSwapBuffers();
 }
@@ -458,7 +475,7 @@ void keyboard(unsigned char key, int x, int y)
         userTank.userTurret.rot += 1.5f;
 		break;
     case 'e': //cannon up
-        if(userTank.userTurret.tankCannon.rot<60.0f)
+        if(userTank.userTurret.tankCannon.rot<15.0f)
         userTank.userTurret.tankCannon.rot += 1.5f;
 		break;
     case 'q': //cannon down
@@ -529,9 +546,17 @@ void idle(void)
 
 	//FISICA PALLOTTOLE
 	bullets *p;
-	//addBullet(&(userTank.bulletRoot));
+	//elimina dalla struttura la radice con posizione Y negativa
+	//radice diventa primo nodo con Y positiva o NULL se non presente
+	while(userTank.bulletRoot!=NULL && userTank.bulletRoot->bullet.pos[1]<0.0f)
+            userTank.bulletRoot = userTank.bulletRoot->next;
+    //scorre tutta la struttura di pallottole
 	for(p=userTank.bulletRoot; p!=NULL; p=p->next)
 	{
+        //toglie dalla struttura le pallottole con Y negativa
+        while(p->next!=NULL && p->next->bullet.pos[1]<0.0f)
+            p->next = p->next->next;
+        //calcola la fisica delle pallottole
         int j;
         for(j=0;j<3;j++)
         {

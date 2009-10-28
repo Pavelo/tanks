@@ -1,21 +1,7 @@
 #include <GLUT/glut.h>
 #include <stdio.h>
 #include <stdlib.h>
-
-typedef struct
-{
-	int x;
-	int y;
-	int type;
-} obstacle;
-
-typedef struct
-{
-	int lenght;
-	int width;
-	int enemies;
-	obstacle obs[100];
-} map;
+#include "levelLoader.h"
 
 map myMap;
 
@@ -24,6 +10,7 @@ map* loadLevel(char* path)
 	//map myMap;
 	int loaded;
 	char line[100];
+	int dim;
 
 	FILE *fp = fopen(path,"r");
 
@@ -35,7 +22,22 @@ map* loadLevel(char* path)
 			// dimensioni della mappa
 			if (line[0] == 'd')
 			{
-				sscanf(line, "%*c %d %d", &myMap.lenght, &myMap.width);
+				sscanf(line, "%*c %d", &dim);
+				switch (dim)
+				{
+				case 0:
+					myMap.lenght = 20;
+					break;
+				case 1:
+					myMap.lenght = 25;
+					break;
+				case 2:
+					myMap.lenght = 30;
+					break;
+				default:
+					myMap.lenght = 20;
+					break;
+				}
 			}
 			// numero di nemici
 			else if (line[0] == 'e')

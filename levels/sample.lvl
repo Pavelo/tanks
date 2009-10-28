@@ -3,8 +3,8 @@
 
 # Questo è un commento
 
-# Dimensioni della mappa (larghezza per lunghezza)
-d 28 36
+# Dimensioni della mappa (0 = piccola, 1 = media, 2 = grande)
+d 0
 
 # Numero di nemici
 e 4
