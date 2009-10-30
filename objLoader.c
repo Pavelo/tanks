@@ -1,78 +1,11 @@
 #include <GLUT/glut.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
+#include "tga.h"
+#include "objLoader.h"
 
-
-typedef struct
-{
-
-	float x;
-	float y;
-	float z;
-
-} Vertex;
-
-typedef struct
-{
-
-	float u;
-	float v;
-
-} VTexture;
-
-typedef struct
-{
-
-	float x;
-	float y;
-	float z;
-
-} VNormal;
-
-typedef struct
-{
-
-	int v1;
-	int t1;
-	int n1;
-
-	int v2;
-	int t2;
-	int n2;
-
-	int v3;
-	int t3;
-	int n3;
-
-	int v4;
-	int t4;
-	int n4;
-
-} Face;
-
-typedef struct
-{
-
-	int v1;
-	int t1;
-	int n1;
-
-	int v2;
-	int t2;
-	int n2;
-
-	int v3;
-	int t3;
-	int n3;
-
-} Face3;
-
-
-Vertex v[10][50000];
-VTexture vt[10][50000];
-VNormal vn[10][50000];
-Face f[10][50000];
-Face3 f3[10][50000];
+obj model;
 
 int vCount;
 int vtCount;
@@ -80,14 +13,7 @@ int vnCount;
 int fCount;
 int f3Count;
 
-float ambient[10][3];
-float diffuse[10][3];
-float specular[10][3];
-float shininess[10];
-char textureName[10][32];
-char texturePath[32];
-
-int loadMTL(char* path, int id)
+int loadMTL(char* path)
 {
 	int loaded;
 	char line[100];
@@ -96,7 +22,7 @@ int loadMTL(char* path, int id)
 	int i;
 	for (i=0; i<32; i++)
 	{
-		texturePath[i] = '\0';
+		model.texturePath[i] = '\0';
 	}
 
 	FILE *fp = fopen(path,"r");
@@ -107,32 +33,32 @@ int loadMTL(char* path, int id)
 		{
 			if (strstr(line, "map_Kd") != NULL)
 			{
-				strncpy(textureName[id], line + 7, strlen(line)-8);
-				printf(" [%s ", textureName[id]);
-				sprintf(texturePath, "texture/%s", textureName[id]);
-				printf("%d]", loadTGA(texturePath, id));
+				strncpy(model.textureName, line + 7, strlen(line)-8);
+				printf(" [%s ", model.textureName);
+				sprintf(model.texturePath, "texture/%s", model.textureName);
+				printf("%d]", loadTGA(model.texturePath, model.textureId));
 
 				// reinizializzo le stringhe
 				for (i=0; i<32; i++)
 				{
-					texturePath[i] = '\0';
+					model.texturePath[i] = '\0';
 				}
 			}
 			else if (strstr(line, "Kd") != NULL)
 			{
-				sscanf(line, "%*c%*c %f %f %f", &diffuse[id][0], &diffuse[id][1], &diffuse[id][2]);
+				sscanf(line, "%*c%*c %f %f %f", &model.diffuse[0], &model.diffuse[1], &model.diffuse[2]);
 			}
 			else if (strstr(line, "Ka") != NULL)
 			{
-				sscanf(line, "%*c%*c %f %f %f", &ambient[id][0], &ambient[id][1], &ambient[id][2]);
+				sscanf(line, "%*c%*c %f %f %f", &model.ambient[0], &model.ambient[1], &model.ambient[2]);
 			}
 			else if (strstr(line, "Ks") != NULL)
 			{
-				sscanf(line, "%*c%*c %f %f %f", &specular[id][0], &specular[id][1], &specular[id][2]);
+				sscanf(line, "%*c%*c %f %f %f", &model.specular[0], &model.specular[1], &model.specular[2]);
 			}
 			else if (strstr(line, "Ns") != NULL)
 			{
-				sscanf(line, "%*c%*c %f", &shininess[id]);
+				sscanf(line, "%*c%*c %f", &model.shininess);
 			}
 		}
 		loaded = 1;
@@ -147,7 +73,7 @@ int loadMTL(char* path, int id)
 	return loaded;
 }
 
-int loadOBJ(char* path, int id)
+obj* loadOBJ(char* path)
 {
 	int loaded;
 	char line[100];
@@ -180,19 +106,19 @@ int loadOBJ(char* path, int id)
 				// texture vertex
 				if (line[1] == 't')
 				{
-					sscanf(line, "%*c%*c %f %f", &vt[id][vtCount].u, &vt[id][vtCount].v);
+					sscanf(line, "%*c%*c %f %f", &model.vt[vtCount].u, &model.vt[vtCount].v);
 					vtCount++;
 				}
 				// normal vertex
 				else if (line[1] == 'n')
 				{
-					sscanf(line, "%*c%*c %f %f %f", &vn[id][vnCount].x, &vn[id][vnCount].y, &vn[id][vnCount].z);
+					sscanf(line, "%*c%*c %f %f %f", &model.vn[vnCount].x, &model.vn[vnCount].y, &model.vn[vnCount].z);
 					vnCount++;
 				}
 				// vertex
 				else
 				{
-					sscanf(line, "%*c %f %f %f", &v[id][vCount].x, &v[id][vCount].y, &v[id][vCount].z);
+					sscanf(line, "%*c %f %f %f", &model.v[vCount].x, &model.v[vCount].y, &model.v[vCount].z);
 					vCount++;
 				}
 			}
@@ -210,27 +136,27 @@ int loadOBJ(char* path, int id)
 				if (spaceCount == 3)
 				{
 					sscanf(line, "%*c %d/%d/%d %d/%d/%d %d/%d/%d",
-							&f3[id][f3Count].v1, &f3[id][f3Count].t1, &f3[id][f3Count].n1,
-							&f3[id][f3Count].v2, &f3[id][f3Count].t2, &f3[id][f3Count].n2,
-							&f3[id][f3Count].v3, &f3[id][f3Count].t3, &f3[id][f3Count].n3);
+							&model.f3[f3Count].v1, &model.f3[f3Count].t1, &model.f3[f3Count].n1,
+							&model.f3[f3Count].v2, &model.f3[f3Count].t2, &model.f3[f3Count].n2,
+							&model.f3[f3Count].v3, &model.f3[f3Count].t3, &model.f3[f3Count].n3);
 					f3Count++;
 				}
 				else if (spaceCount == 4)
 				{
 					sscanf(line, "%*c %d/%d/%d %d/%d/%d %d/%d/%d %d/%d/%d",
-							&f[id][fCount].v1, &f[id][fCount].t1, &f[id][fCount].n1,
-							&f[id][fCount].v2, &f[id][fCount].t2, &f[id][fCount].n2,
-							&f[id][fCount].v3, &f[id][fCount].t3, &f[id][fCount].n3,
-							&f[id][fCount].v4, &f[id][fCount].t4, &f[id][fCount].n4);
+							&model.f[fCount].v1, &model.f[fCount].t1, &model.f[fCount].n1,
+							&model.f[fCount].v2, &model.f[fCount].t2, &model.f[fCount].n2,
+							&model.f[fCount].v3, &model.f[fCount].t3, &model.f[fCount].n3,
+							&model.f[fCount].v4, &model.f[fCount].t4, &model.f[fCount].n4);
 					fCount++;
 				}
 			}
 			else if (strstr(line, "mtllib") != NULL)
 			{
 				strncpy(mtllibName, line+7, strlen(line)-8);
-				printf(mtllibName);
+				printf("%s", mtllibName);
 				sprintf(mtllibPath, "obj/%s", mtllibName);
-				printf(" %d\n",loadMTL(mtllibPath, id));
+				printf(" %d\n",loadMTL(mtllibPath));
 
 				// reinizializzo le stringhe
 				for (i=0; i<32; i++)
@@ -239,8 +165,8 @@ int loadOBJ(char* path, int id)
 					mtllibPath[i] = '\0';
 				}
 			}
-			//        	printf("v %f %f %f\n", v[id][vCount].x, v[id][vCount].y, v[id][vCount].z);
-			//        	printf("%f %f %f\n", vn[id][f[id][fCount].n1-1].x, vn[id][f[id][fCount].n1-1].y, vn[id][f[id][fCount].n1-1].z);
+			//        	printf("v %f %f %f\n", model.v[vCount].x, model.v[vCount].y, model.v[vCount].z);
+			//        	printf("%f %f %f\n", model.vn[f[fCount].n1-1].x, model.vn[f[fCount].n1-1].y, model.vn[f[fCount].n1-1].z);
 		}
 		loaded = 1;
 	}
@@ -252,54 +178,54 @@ int loadOBJ(char* path, int id)
 	fclose(fp);
 
 
-	return loaded;
+	return &model;
 }
 
-void drawOBJ(int id)
+void drawOBJ(obj* model)
 {
-	//	printf("ambient %f %f %f\n", ambient[id][0], ambient[id][1], ambient[id][2]);
-	//	printf("diffuse %f %f %f\n", diffuse[id][0], diffuse[id][1], diffuse[id][2]);
-	//	printf("specular %f %f %f\n", specular[id][0], specular[id][1], specular[id][2]);
-	//	printf("shininess %f\n", shininess[id]);
+	//	printf("ambient %f %f %f\n", ambient[0], ambient[1], ambient[2]);
+	//	printf("diffuse %f %f %f\n", diffuse[0], diffuse[1], diffuse[2]);
+	//	printf("specular %f %f %f\n", specular[0], specular[1], specular[2]);
+	//	printf("shininess %f\n", shininess);
 
-	glMaterialfv(GL_FRONT, GL_AMBIENT, ambient[id]);
-	glMaterialfv(GL_FRONT, GL_DIFFUSE, diffuse[id]);
-	glMaterialfv(GL_FRONT, GL_SPECULAR, specular[id]);
-	glMaterialf(GL_FRONT, GL_SHININESS, shininess[id]);
+	glMaterialfv(GL_FRONT, GL_AMBIENT, model->ambient);
+	glMaterialfv(GL_FRONT, GL_DIFFUSE, model->diffuse);
+	glMaterialfv(GL_FRONT, GL_SPECULAR, model->specular);
+	glMaterialf(GL_FRONT, GL_SHININESS, model->shininess);
 
 	glEnable(GL_TEXTURE_2D);
-	glBindTexture(GL_TEXTURE_2D, id);
+	glBindTexture(GL_TEXTURE_2D, model->textureId);
 
 	glBegin(GL_QUADS);
 
 	int i;
 	for (i=0; i<fCount; i++)
 	{
-		glNormal3f(vn[id][f[id][i].n1-1].x, vn[id][f[id][i].n1-1].y, vn[id][f[id][i].n1-1].z);
-		glTexCoord2f(vt[id][f[id][i].t1-1].u, vt[id][f[id][i].t1-1].v);
-		glVertex3f(v[id][f[id][i].v1-1].x, v[id][f[id][i].v1-1].y, v[id][f[id][i].v1-1].z);
+		glNormal3f(model->vn[model->f[i].n1-1].x, model->vn[model->f[i].n1-1].y, model->vn[model->f[i].n1-1].z);
+		glTexCoord2f(model->vt[model->f[i].t1-1].u, model->vt[model->f[i].t1-1].v);
+		glVertex3f(model->v[model->f[i].v1-1].x, model->v[model->f[i].v1-1].y, model->v[model->f[i].v1-1].z);
 
-		glNormal3f(vn[id][f[id][i].n2-1].x, vn[id][f[id][i].n2-1].y, vn[id][f[id][i].n2-1].z);
-		glTexCoord2f(vt[id][f[id][i].t2-1].u, vt[id][f[id][i].t2-1].v);
-		glVertex3f(v[id][f[id][i].v2-1].x, v[id][f[id][i].v2-1].y, v[id][f[id][i].v2-1].z);
+		glNormal3f(model->vn[model->f[i].n2-1].x, model->vn[model->f[i].n2-1].y, model->vn[model->f[i].n2-1].z);
+		glTexCoord2f(model->vt[model->f[i].t2-1].u, model->vt[model->f[i].t2-1].v);
+		glVertex3f(model->v[model->f[i].v2-1].x, model->v[model->f[i].v2-1].y, model->v[model->f[i].v2-1].z);
 
-		glNormal3f(vn[id][f[id][i].n3-1].x, vn[id][f[id][i].n3-1].y, vn[id][f[id][i].n3-1].z);
-		glTexCoord2f(vt[id][f[id][i].t3-1].u, vt[id][f[id][i].t3-1].v);
-		glVertex3f(v[id][f[id][i].v3-1].x, v[id][f[id][i].v3-1].y, v[id][f[id][i].v3-1].z);
+		glNormal3f(model->vn[model->f[i].n3-1].x, model->vn[model->f[i].n3-1].y, model->vn[model->f[i].n3-1].z);
+		glTexCoord2f(model->vt[model->f[i].t3-1].u, model->vt[model->f[i].t3-1].v);
+		glVertex3f(model->v[model->f[i].v3-1].x, model->v[model->f[i].v3-1].y, model->v[model->f[i].v3-1].z);
 
-		glNormal3f(vn[id][f[id][i].n4-1].x, vn[id][f[id][i].n4-1].y, vn[id][f[id][i].n4-1].z);
-		glTexCoord2f(vt[id][f[id][i].t4-1].u, vt[id][f[id][i].t4-1].v);
-		glVertex3f(v[id][f[id][i].v4-1].x, v[id][f[id][i].v4-1].y, v[id][f[id][i].v4-1].z);
+		glNormal3f(model->vn[model->f[i].n4-1].x, model->vn[model->f[i].n4-1].y, model->vn[model->f[i].n4-1].z);
+		glTexCoord2f(model->vt[model->f[i].t4-1].u, model->vt[model->f[i].t4-1].v);
+		glVertex3f(model->v[model->f[i].v4-1].x, model->v[model->f[i].v4-1].y, model->v[model->f[i].v4-1].z);
 
-		/*printf("v1 %f %f %f\n", v[id][f[id][i].v1-1].x, v[id][f[id][i].v1-1].y, v[id][f[id][i].v1-1].z);
-            printf("v2 %f %f %f\n", v[id][f[id][i].v2-1].x, v[id][f[id][i].v2-1].y, v[id][f[id][i].v2-1].z);
-            printf("v3 %f %f %f\n", v[id][f[id][i].v3-1].x, v[id][f[id][i].v3-1].y, v[id][f[id][i].v3-1].z);
-            printf("v4 %f %f %f\n", v[id][f[id][i].v4-1].x, v[id][f[id][i].v4-1].y, v[id][f[id][i].v4-1].z);
+		/*printf("v1 %f %f %f\n", v[f[i].v1-1].x, v[f[i].v1-1].y, v[f[i].v1-1].z);
+            printf("v2 %f %f %f\n", v[f[i].v2-1].x, v[f[i].v2-1].y, v[f[i].v2-1].z);
+            printf("v3 %f %f %f\n", v[f[i].v3-1].x, v[f[i].v3-1].y, v[f[i].v3-1].z);
+            printf("v4 %f %f %f\n", v[f[i].v4-1].x, v[f[i].v4-1].y, v[f[i].v4-1].z);
 
-            printf("vn1 %f %f %f\n", vn[id][f[id][i].n1-1].x, vn[id][f[id][i].n1-1].y, vn[id][f[id][i].n1-1].z);
-            printf("vn2 %f %f %f\n", vn[id][f[id][i].n2-1].x, vn[id][f[id][i].n2-1].y, vn[id][f[id][i].n2-1].z);
-            printf("vn3 %f %f %f\n", vn[id][f[id][i].n3-1].x, vn[id][f[id][i].n3-1].y, vn[id][f[id][i].n3-1].z);
-            printf("vn4 %f %f %f\n", vn[id][f[id][i].n4-1].x, vn[id][f[id][i].n4-1].y, vn[id][f[id][i].n4-1].z);*/
+            printf("vn1 %f %f %f\n", vn[f[i].n1-1].x, vn[f[i].n1-1].y, vn[f[i].n1-1].z);
+            printf("vn2 %f %f %f\n", vn[f[i].n2-1].x, vn[f[i].n2-1].y, vn[f[i].n2-1].z);
+            printf("vn3 %f %f %f\n", vn[f[i].n3-1].x, vn[f[i].n3-1].y, vn[f[i].n3-1].z);
+            printf("vn4 %f %f %f\n", vn[f[i].n4-1].x, vn[f[i].n4-1].y, vn[f[i].n4-1].z);*/
 	}
 
 	glEnd();
@@ -308,25 +234,25 @@ void drawOBJ(int id)
 
 	for (i=0; i<f3Count; i++)
 	{
-		glNormal3f(vn[id][f3[id][i].n1-1].x, vn[id][f3[id][i].n1-1].y, vn[id][f3[id][i].n1-1].z);
-		glTexCoord2f(vt[id][f3[id][i].t1-1].u, vt[id][f3[id][i].t1-1].v);
-		glVertex3f(v[id][f3[id][i].v1-1].x, v[id][f3[id][i].v1-1].y, v[id][f3[id][i].v1-1].z);
+		glNormal3f(model->vn[model->f3[i].n1-1].x, model->vn[model->f3[i].n1-1].y, model->vn[model->f3[i].n1-1].z);
+		glTexCoord2f(model->vt[model->f3[i].t1-1].u, model->vt[model->f3[i].t1-1].v);
+		glVertex3f(model->v[model->f3[i].v1-1].x, model->v[model->f3[i].v1-1].y, model->v[model->f3[i].v1-1].z);
 
-		glNormal3f(vn[id][f3[id][i].n2-1].x, vn[id][f3[id][i].n2-1].y, vn[id][f3[id][i].n2-1].z);
-		glTexCoord2f(vt[id][f3[id][i].t2-1].u, vt[id][f3[id][i].t2-1].v);
-		glVertex3f(v[id][f3[id][i].v2-1].x, v[id][f3[id][i].v2-1].y, v[id][f3[id][i].v2-1].z);
+		glNormal3f(model->vn[model->f3[i].n2-1].x, model->vn[model->f3[i].n2-1].y, model->vn[model->f3[i].n2-1].z);
+		glTexCoord2f(model->vt[model->f3[i].t2-1].u, model->vt[model->f3[i].t2-1].v);
+		glVertex3f(model->v[model->f3[i].v2-1].x, model->v[model->f3[i].v2-1].y, model->v[model->f3[i].v2-1].z);
 
-		glNormal3f(vn[id][f3[id][i].n3-1].x, vn[id][f3[id][i].n3-1].y, vn[id][f3[id][i].n3-1].z);
-		glTexCoord2f(vt[id][f3[id][i].t3-1].u, vt[id][f3[id][i].t3-1].v);
-		glVertex3f(v[id][f3[id][i].v3-1].x, v[id][f3[id][i].v3-1].y, v[id][f3[id][i].v3-1].z);
+		glNormal3f(model->vn[model->f3[i].n3-1].x, model->vn[model->f3[i].n3-1].y, model->vn[model->f3[i].n3-1].z);
+		glTexCoord2f(model->vt[model->f3[i].t3-1].u, model->vt[model->f3[i].t3-1].v);
+		glVertex3f(model->v[model->f3[i].v3-1].x, model->v[model->f3[i].v3-1].y, model->v[model->f3[i].v3-1].z);
 
-		/*            printf("v1 %f %f %f\n", v[id][f[id][i].v1-1].x, v[id][f[id][i].v1-1].y, v[id][f[id][i].v1-1].z);
-            printf("v2 %f %f %f\n", v[id][f[id][i].v2-1].x, v[id][f[id][i].v2-1].y, v[id][f[id][i].v2-1].z);
-            printf("v3 %f %f %f\n", v[id][f[id][i].v3-1].x, v[id][f[id][i].v3-1].y, v[id][f[id][i].v3-1].z);
+		/*            printf("v1 %f %f %f\n", v[f[i].v1-1].x, v[f[i].v1-1].y, v[f[i].v1-1].z);
+            printf("v2 %f %f %f\n", v[f[i].v2-1].x, v[f[i].v2-1].y, v[f[i].v2-1].z);
+            printf("v3 %f %f %f\n", v[f[i].v3-1].x, v[f[i].v3-1].y, v[f[i].v3-1].z);
 
-            printf("vn1 %f %f %f\n", vn[id][f[id][i].n1-1].x, vn[id][f[id][i].n1-1].y, vn[id][f[id][i].n1-1].z);
-            printf("vn2 %f %f %f\n", vn[id][f[id][i].n2-1].x, vn[id][f[id][i].n2-1].y, vn[id][f[id][i].n2-1].z);
-            printf("vn3 %f %f %f\n", vn[id][f[id][i].n3-1].x, vn[id][f[id][i].n3-1].y, vn[id][f[id][i].n3-1].z);*/
+            printf("vn1 %f %f %f\n", vn[f[i].n1-1].x, vn[f[i].n1-1].y, vn[f[i].n1-1].z);
+            printf("vn2 %f %f %f\n", vn[f[i].n2-1].x, vn[f[i].n2-1].y, vn[f[i].n2-1].z);
+            printf("vn3 %f %f %f\n", vn[f[i].n3-1].x, vn[f[i].n3-1].y, vn[f[i].n3-1].z);*/
 	}
 
 	glEnd();

@@ -288,14 +288,15 @@ void init(void)
 	userTank.userTreadR.pos[2] = 0.62f;
 
 	//carico i modelli
-	loadOBJ("obj/tank_body.obj", 0);
+
+/*	loadOBJ("obj/tank_body.obj");
 	loadOBJ("obj/tread.obj", 1);
 	loadOBJ("obj/tread2.obj", 2);
 	loadOBJ("obj/tread3.obj", 3);
 	loadOBJ("obj/tank_turret.obj", 4);
 	loadOBJ("obj/tank_cannon.obj", 5);
 	loadOBJ("obj/skyl.obj", 6);
-	loadOBJ("obj/tank_body.obj", 7);
+	loadOBJ("obj/tank_body.obj", 7);*/
 
 	//carico il livello
 	levelMap = loadLevel("levels/sample.lvl");
@@ -354,7 +355,7 @@ void display(void)
 	lightOn();
 
     //CARRO ARMATO UTENTE
-	glPushMatrix();
+/*	glPushMatrix();
 		glTranslatef(userTank.pos[0], userTank.pos[1], userTank.pos[2]);
 		glRotatef(userTank.rot,0.0f,1.0f,0.0f);
 		//turret
@@ -415,13 +416,13 @@ void display(void)
            glTranslatef(p->bullet.pos[0],p->bullet.pos[1],p->bullet.pos[2]);
            glutSolidSphere(0.2f, 20, 20);
         glPopMatrix();
-        /*glPushMatrix(); disegna sfere per controllare cancellazione da struttura corretta
+*/        /*glPushMatrix(); disegna sfere per controllare cancellazione da struttura corretta
            glTranslatef(2.0f*kkk,0.0f,0.0f);
            glutSolidSphere(1.2f, 20, 20);
         glPopMatrix();
         kkk += 1.0f;
         */
-    }
+/*    }
 
     //LANDSCAPE
 	lightOff();
@@ -430,7 +431,7 @@ void display(void)
 		drawOBJ(6);
 	glPopMatrix();
 	lightOn();
-
+*/
 
 	glutSwapBuffers();
 }
@@ -507,7 +508,7 @@ void idle(void)
     //calculating friction force [Fk = fC * g * m]
     float frictionForce = 9.8f * frictionCoeff * userTank.mass;
     float speed = userTank.v[0]*sin(userTank.rot*M_PI/180.0f) + userTank.v[2]*cos(userTank.rot*M_PI/180.0f);
-    if(speed>=-0.1f & speed<=0.1f & userTank.enginePower<=0.0f)
+    if((speed>=-0.1f) && (speed<=0.1f) && (userTank.enginePower<=0.0f))
     {
        frictionForce = 0.0f;
     }
@@ -521,7 +522,7 @@ void idle(void)
     }
 
     //stop from continous movement
-    if(speed>=-0.1f & speed<=0.1f)
+    if((speed>=-0.1f) && (speed<=0.1f))
     {
        userTank.v[0]=0.0f;
        userTank.v[2]=0.0f;

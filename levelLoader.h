@@ -13,4 +13,3 @@ typedef struct
 } map;
 
 map* loadLevel(char* path);
-
