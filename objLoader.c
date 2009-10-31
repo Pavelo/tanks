@@ -1,19 +1,15 @@
 #include <GLUT/glut.h>
+//#include <GL/glut.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include "tga.h"
 #include "objLoader.h"
 
-obj model;
+//obj model;
+int txtId = 0;
 
-int vCount;
-int vtCount;
-int vnCount;
-int fCount;
-int f3Count;
-
-int loadMTL(char* path)
+int loadMTL(char* path, obj* model)
 {
 	int loaded;
 	char line[100];
@@ -22,8 +18,12 @@ int loadMTL(char* path)
 	int i;
 	for (i=0; i<32; i++)
 	{
-		model.texturePath[i] = '\0';
+		model->texturePath[i] = '\0';
 	}
+
+	//assegno un identificativo per la texture da caricare per ogni modello
+	model->textureId = txtId;
+	txtId++;
 
 	FILE *fp = fopen(path,"r");
 
@@ -33,32 +33,32 @@ int loadMTL(char* path)
 		{
 			if (strstr(line, "map_Kd") != NULL)
 			{
-				strncpy(model.textureName, line + 7, strlen(line)-8);
-				printf(" [%s ", model.textureName);
-				sprintf(model.texturePath, "texture/%s", model.textureName);
-				printf("%d]", loadTGA(model.texturePath, model.textureId));
+				strncpy(model->textureName, line + 7, strlen(line)-8);
+				printf(" [%s ", model->textureName);
+				sprintf(model->texturePath, "texture/%s", model->textureName);
+				printf("%d]", loadTGA(model->texturePath, model->textureId));
 
 				// reinizializzo le stringhe
 				for (i=0; i<32; i++)
 				{
-					model.texturePath[i] = '\0';
+					model->texturePath[i] = '\0';
 				}
 			}
 			else if (strstr(line, "Kd") != NULL)
 			{
-				sscanf(line, "%*c%*c %f %f %f", &model.diffuse[0], &model.diffuse[1], &model.diffuse[2]);
+				sscanf(line, "%*c%*c %f %f %f", &model->diffuse[0], &model->diffuse[1], &model->diffuse[2]);
 			}
 			else if (strstr(line, "Ka") != NULL)
 			{
-				sscanf(line, "%*c%*c %f %f %f", &model.ambient[0], &model.ambient[1], &model.ambient[2]);
+				sscanf(line, "%*c%*c %f %f %f", &model->ambient[0], &model->ambient[1], &model->ambient[2]);
 			}
 			else if (strstr(line, "Ks") != NULL)
 			{
-				sscanf(line, "%*c%*c %f %f %f", &model.specular[0], &model.specular[1], &model.specular[2]);
+				sscanf(line, "%*c%*c %f %f %f", &model->specular[0], &model->specular[1], &model->specular[2]);
 			}
 			else if (strstr(line, "Ns") != NULL)
 			{
-				sscanf(line, "%*c%*c %f", &model.shininess);
+				sscanf(line, "%*c%*c %f", &model->shininess);
 			}
 		}
 		loaded = 1;
@@ -77,12 +77,14 @@ obj* loadOBJ(char* path)
 {
 	int loaded;
 	char line[100];
+	obj *model;
+	model = (obj *) malloc(sizeof(obj));
 
-	vCount = 0;
-	vtCount = 0;
-	vnCount = 0;
-	fCount = 0;
-	f3Count = 0;
+	int vCount = 0;
+	int vtCount = 0;
+	int vnCount = 0;
+	model->fCount = 0;
+	model->f3Count = 0;
 
 	FILE *fp = fopen(path,"r");
 
@@ -106,19 +108,19 @@ obj* loadOBJ(char* path)
 				// texture vertex
 				if (line[1] == 't')
 				{
-					sscanf(line, "%*c%*c %f %f", &model.vt[vtCount].u, &model.vt[vtCount].v);
+					sscanf(line, "%*c%*c %f %f", &model->vt[vtCount].u, &model->vt[vtCount].v);
 					vtCount++;
 				}
 				// normal vertex
 				else if (line[1] == 'n')
 				{
-					sscanf(line, "%*c%*c %f %f %f", &model.vn[vnCount].x, &model.vn[vnCount].y, &model.vn[vnCount].z);
+					sscanf(line, "%*c%*c %f %f %f", &model->vn[vnCount].x, &model->vn[vnCount].y, &model->vn[vnCount].z);
 					vnCount++;
 				}
 				// vertex
 				else
 				{
-					sscanf(line, "%*c %f %f %f", &model.v[vCount].x, &model.v[vCount].y, &model.v[vCount].z);
+					sscanf(line, "%*c %f %f %f", &model->v[vCount].x, &model->v[vCount].y, &model->v[vCount].z);
 					vCount++;
 				}
 			}
@@ -136,19 +138,19 @@ obj* loadOBJ(char* path)
 				if (spaceCount == 3)
 				{
 					sscanf(line, "%*c %d/%d/%d %d/%d/%d %d/%d/%d",
-							&model.f3[f3Count].v1, &model.f3[f3Count].t1, &model.f3[f3Count].n1,
-							&model.f3[f3Count].v2, &model.f3[f3Count].t2, &model.f3[f3Count].n2,
-							&model.f3[f3Count].v3, &model.f3[f3Count].t3, &model.f3[f3Count].n3);
-					f3Count++;
+							&model->f3[model->f3Count].v1, &model->f3[model->f3Count].t1, &model->f3[model->f3Count].n1,
+							&model->f3[model->f3Count].v2, &model->f3[model->f3Count].t2, &model->f3[model->f3Count].n2,
+							&model->f3[model->f3Count].v3, &model->f3[model->f3Count].t3, &model->f3[model->f3Count].n3);
+					model->f3Count++;
 				}
 				else if (spaceCount == 4)
 				{
 					sscanf(line, "%*c %d/%d/%d %d/%d/%d %d/%d/%d %d/%d/%d",
-							&model.f[fCount].v1, &model.f[fCount].t1, &model.f[fCount].n1,
-							&model.f[fCount].v2, &model.f[fCount].t2, &model.f[fCount].n2,
-							&model.f[fCount].v3, &model.f[fCount].t3, &model.f[fCount].n3,
-							&model.f[fCount].v4, &model.f[fCount].t4, &model.f[fCount].n4);
-					fCount++;
+							&model->f[model->fCount].v1, &model->f[model->fCount].t1, &model->f[model->fCount].n1,
+							&model->f[model->fCount].v2, &model->f[model->fCount].t2, &model->f[model->fCount].n2,
+							&model->f[model->fCount].v3, &model->f[model->fCount].t3, &model->f[model->fCount].n3,
+							&model->f[model->fCount].v4, &model->f[model->fCount].t4, &model->f[model->fCount].n4);
+					model->fCount++;
 				}
 			}
 			else if (strstr(line, "mtllib") != NULL)
@@ -156,7 +158,7 @@ obj* loadOBJ(char* path)
 				strncpy(mtllibName, line+7, strlen(line)-8);
 				printf("%s", mtllibName);
 				sprintf(mtllibPath, "obj/%s", mtllibName);
-				printf(" %d\n",loadMTL(mtllibPath));
+				printf(" %d\n",loadMTL(mtllibPath,model));
 
 				// reinizializzo le stringhe
 				for (i=0; i<32; i++)
@@ -166,7 +168,7 @@ obj* loadOBJ(char* path)
 				}
 			}
 			//        	printf("v %f %f %f\n", model.v[vCount].x, model.v[vCount].y, model.v[vCount].z);
-			//        	printf("%f %f %f\n", model.vn[f[fCount].n1-1].x, model.vn[f[fCount].n1-1].y, model.vn[f[fCount].n1-1].z);
+			//        	printf("%f %f %f\n", model.vn[f[model->fCount].n1-1].x, model.vn[f[model->fCount].n1-1].y, model.vn[f[model->fCount].n1-1].z);
 		}
 		loaded = 1;
 	}
@@ -178,7 +180,7 @@ obj* loadOBJ(char* path)
 	fclose(fp);
 
 
-	return &model;
+	return model;
 }
 
 void drawOBJ(obj* model)
@@ -199,7 +201,7 @@ void drawOBJ(obj* model)
 	glBegin(GL_QUADS);
 
 	int i;
-	for (i=0; i<fCount; i++)
+	for (i=0; i<model->fCount; i++)
 	{
 		glNormal3f(model->vn[model->f[i].n1-1].x, model->vn[model->f[i].n1-1].y, model->vn[model->f[i].n1-1].z);
 		glTexCoord2f(model->vt[model->f[i].t1-1].u, model->vt[model->f[i].t1-1].v);
@@ -232,7 +234,7 @@ void drawOBJ(obj* model)
 
 	glBegin(GL_TRIANGLES);
 
-	for (i=0; i<f3Count; i++)
+	for (i=0; i<model->f3Count; i++)
 	{
 		glNormal3f(model->vn[model->f3[i].n1-1].x, model->vn[model->f3[i].n1-1].y, model->vn[model->f3[i].n1-1].z);
 		glTexCoord2f(model->vt[model->f3[i].t1-1].u, model->vt[model->f3[i].t1-1].v);

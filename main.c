@@ -15,7 +15,7 @@
 #include <sys/time.h>
 #include <math.h>
 //#include <windows.h>
-#include "tga.h"
+//#include "tga.h"
 #include "levelLoader.h"
 #include "objLoader.h"
 
@@ -104,6 +104,8 @@ int turretView = 0;
 int fixedView  = 0;
 map *levelMap;
 int animation = 0;
+obj* objTank[20];
+
 
 //FUNZIONI
 
@@ -289,8 +291,16 @@ void init(void)
 
 	//carico i modelli
 
-/*	loadOBJ("obj/tank_body.obj");
-	loadOBJ("obj/tread.obj", 1);
+	objTank[0] = loadOBJ("obj/tank_body.obj");
+
+	objTank[1] = loadOBJ("obj/tread.obj");
+	objTank[2] = loadOBJ("obj/tread2.obj");
+	objTank[3] = loadOBJ("obj/tread3.obj");
+	objTank[4] = loadOBJ("obj/tank_turret.obj");
+	objTank[5] = loadOBJ("obj/tank_cannon.obj");
+	//obj1 = loadOBJ("obj/tank_body.obj");
+	//objTank[0] = loadOBJ("obj/skyl.obj");
+	/*loadOBJ("obj/tread.obj", 1);
 	loadOBJ("obj/tread2.obj", 2);
 	loadOBJ("obj/tread3.obj", 3);
 	loadOBJ("obj/tank_turret.obj", 4);
@@ -354,8 +364,9 @@ void display(void)
 	makeGrid(100.0f,100.0f,20.0f);
 	lightOn();
 
+
     //CARRO ARMATO UTENTE
-/*	glPushMatrix();
+	glPushMatrix();
 		glTranslatef(userTank.pos[0], userTank.pos[1], userTank.pos[2]);
 		glRotatef(userTank.rot,0.0f,1.0f,0.0f);
 		//turret
@@ -367,23 +378,23 @@ void display(void)
 		      glTranslatef(userTank.userTurret.tankCannon.pos[0],userTank.userTurret.tankCannon.pos[1],userTank.userTurret.tankCannon.pos[2]+1.0f);
               glRotatef(userTank.userTurret.tankCannon.rot,1.0f,0.0f,0.0f);
               glTranslatef(0.0f,0.0f,-1.0f);
-              drawOBJ(5);
+              drawOBJ(objTank[5]);
            glPopMatrix();
-           drawOBJ(4);
+           drawOBJ(objTank[4]);
         glPopMatrix();
         //right tread
 		glPushMatrix();
 		   glTranslatef(userTank.userTreadR.pos[0],userTank.userTreadR.pos[1],userTank.userTreadR.pos[2]);
            glRotatef(90.0f,0.0f,1.0f,0.0f);
            if(animation<10)
-           drawOBJ(1);
+           drawOBJ(objTank[1]);
            else if(animation<20)
-           drawOBJ(2);
+           drawOBJ(objTank[2]);
            else if(animation<30)
-           drawOBJ(3);
+           drawOBJ(objTank[3]);
            else
            {
-           drawOBJ(1);
+           drawOBJ(objTank[1]);
            animation = 0;
            }
         glPopMatrix();
@@ -392,19 +403,19 @@ void display(void)
 		   glTranslatef(userTank.userTreadL.pos[0],userTank.userTreadL.pos[1],userTank.userTreadL.pos[2]);
            glRotatef(90.0f,0.0f,1.0f,0.0f);
            if(animation<10)
-           drawOBJ(1);
+           drawOBJ(objTank[1]);
            else if(animation<20)
-           drawOBJ(2);
+           drawOBJ(objTank[2]);
            else if(animation<30)
-           drawOBJ(3);
+           drawOBJ(objTank[3]);
            else
            {
-           drawOBJ(1);
+           drawOBJ(objTank[1]);
            animation = 0;
            }
         glPopMatrix();
         //tank body
-		drawOBJ(0);
+		drawOBJ(objTank[0]);
 	glPopMatrix();
 
 	bullets *p;
@@ -416,16 +427,16 @@ void display(void)
            glTranslatef(p->bullet.pos[0],p->bullet.pos[1],p->bullet.pos[2]);
            glutSolidSphere(0.2f, 20, 20);
         glPopMatrix();
-*/        /*glPushMatrix(); disegna sfere per controllare cancellazione da struttura corretta
+        /*glPushMatrix(); disegna sfere per controllare cancellazione da struttura corretta
            glTranslatef(2.0f*kkk,0.0f,0.0f);
            glutSolidSphere(1.2f, 20, 20);
         glPopMatrix();
         kkk += 1.0f;
         */
-/*    }
+    }
 
     //LANDSCAPE
-	lightOff();
+/*	lightOff();
 	glPushMatrix();
 		glScalef(150.0f, 150.0f, 150.0f);
 		drawOBJ(6);

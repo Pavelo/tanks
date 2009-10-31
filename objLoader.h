@@ -69,6 +69,8 @@ typedef struct
 	VNormal vn[50000];
 	Face f[50000];
 	Face3 f3[50000];
+	int fCount;
+	int f3Count;
 
 	float ambient[3];
 	float diffuse[3];
