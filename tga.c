@@ -149,7 +149,7 @@ getData
 Gets the image data for the specified bit depth.
 =============
 */
-char *getData (FILE *s, int sz, int iBits)
+unsigned char *getData (FILE *s, int sz, int iBits)
 {
     if (iBits == 32)
         return getRGBA (s, sz);

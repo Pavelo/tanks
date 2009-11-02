@@ -290,14 +290,14 @@ void init(void)
 	userTank.userTreadR.pos[2] = 0.62f;
 
 	//carico i modelli
-
-	objTank[0] = loadOBJ("obj/tank_body.obj");
-
-	objTank[1] = loadOBJ("obj/tread.obj");
-	objTank[2] = loadOBJ("obj/tread2.obj");
-	objTank[3] = loadOBJ("obj/tread3.obj");
-	objTank[4] = loadOBJ("obj/tank_turret.obj");
-	objTank[5] = loadOBJ("obj/tank_cannon.obj");
+	
+	objTank[0] = (obj*) loadOBJ("obj/tank_body.obj");
+	
+	objTank[1] = (obj*) loadOBJ("obj/tread.obj");
+	objTank[2] = (obj*) loadOBJ("obj/tread2.obj");
+	objTank[3] = (obj*) loadOBJ("obj/tread3.obj");
+	objTank[4] = (obj*) loadOBJ("obj/tank_turret.obj");
+	objTank[5] = (obj*) loadOBJ("obj/tank_cannon.obj");
 	//obj1 = loadOBJ("obj/tank_body.obj");
 	//objTank[0] = loadOBJ("obj/skyl.obj");
 	/*loadOBJ("obj/tread.obj", 1);
