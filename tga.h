@@ -1,12 +1,12 @@
 /*
-	Copyright (C) 1999
-	For non-commercial use only.
-
-  	File	: tga.h
-	Date	: 05/05/1999
-	Author	: Nate Miller
-	Contact	: vandals1@home.com
-*/
+ Copyright (C) 1999
+ For non-commercial use only.
+ 
+ File	: tga.h
+ Date	: 05/05/1999
+ Author	: Nate Miller
+ Contact	: vandals1@home.com
+ */
 
 /* Error Codes */
 #define TGA_FILE_NOT_FOUND          13 /* file was not found */

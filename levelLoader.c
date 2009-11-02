@@ -11,9 +11,9 @@ map* loadLevel(char* path)
 	int loaded;
 	char line[100];
 	int dim;
-
+	
 	FILE *fp = fopen(path,"r");
-
+	
 	if (fp != NULL)
 	{
 		int i = 0;
@@ -25,18 +25,18 @@ map* loadLevel(char* path)
 				sscanf(line, "%*c %d", &dim);
 				switch (dim)
 				{
-				case 0:
-					myMap.lenght = 20;
-					break;
-				case 1:
-					myMap.lenght = 25;
-					break;
-				case 2:
-					myMap.lenght = 30;
-					break;
-				default:
-					myMap.lenght = 20;
-					break;
+					case 0:
+						myMap.lenght = 20;
+						break;
+					case 1:
+						myMap.lenght = 25;
+						break;
+					case 2:
+						myMap.lenght = 30;
+						break;
+					default:
+						myMap.lenght = 20;
+						break;
 				}
 			}
 			// numero di nemici
@@ -51,11 +51,11 @@ map* loadLevel(char* path)
 				i++;
 			}
 		}
-
+		
 		loaded = 1;
 	}
 	else
 		loaded = 0;
-
+	
 	return &myMap;
 }
