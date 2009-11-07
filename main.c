@@ -17,7 +17,6 @@
 //#include <windows.h>
 //#include "tga.h"
 #include "levelLoader.h"
-#include "objLoader.h"
 
 //COSTANTI
 #define WIDTH 800
@@ -102,12 +101,101 @@ float frictionCoeff = 0.8f;
 float distanceFromCamera = 10.0f;
 int turretView = 0;
 int fixedView  = 0;
-map *levelMap;
+map* levelMap;
 int animation = 0;
 obj* objTank[20];
 
-
 //FUNZIONI
+
+//Crea l'illuminazione per il livello DESERTO
+void setDesertLights(void)
+{
+	float ambient0[] = {1.0f, 1.0f, 1.0f};
+	float diffuse0[] = {1.0f, 1.0f, 1.0f};
+	float specular0[] = {1.0f, 1.0f, 1.0f};
+	
+	float ambient1[] = {1.0f, 1.0f, 1.0f};
+	float diffuse1[] = {0.7f, 0.7f, 0.7f};
+	float specular1[] = {1.0f, 1.0f, 1.0f};
+	
+	float ambient2[] = {1.0f, 1.0f, 1.0f};
+	float diffuse2[] = {0.5f, 0.5f, 0.5f};
+	float specular2[] = {1.0f, 1.0f, 1.0f};
+	
+	glEnable(GL_LIGHTING);
+	
+	glLightfv(GL_LIGHT0, GL_AMBIENT, ambient0);
+	glLightfv(GL_LIGHT0, GL_DIFFUSE, diffuse0);
+	glLightfv(GL_LIGHT0, GL_SPECULAR, specular0);
+	glEnable(GL_LIGHT0);
+	
+	glLightfv(GL_LIGHT1, GL_AMBIENT, ambient1);
+	glLightfv(GL_LIGHT1, GL_DIFFUSE, diffuse1);
+	glLightfv(GL_LIGHT1, GL_SPECULAR, specular1);
+	glEnable(GL_LIGHT1);
+	
+	glLightfv(GL_LIGHT2, GL_AMBIENT, ambient2);
+	glLightfv(GL_LIGHT2, GL_DIFFUSE, diffuse2);
+	glLightfv(GL_LIGHT2, GL_SPECULAR, specular2);
+	glEnable(GL_LIGHT2);
+}
+
+//Crea l'illuminazione per il livello URBANO
+void setUrbanLights(void)
+{
+	float ambient0[] = {1.0f, 1.0f, 1.0f};
+	float diffuse0[] = {1.0f, 1.0f, 1.0f};
+	float specular0[] = {1.0f, 1.0f, 1.0f};
+	
+	float ambient1[] = {1.0f, 1.0f, 1.0f};
+	float diffuse1[] = {0.7f, 0.7f, 0.7f};
+	float specular1[] = {1.0f, 1.0f, 1.0f};
+	
+	float ambient2[] = {1.0f, 1.0f, 1.0f};
+	float diffuse2[] = {0.5f, 0.5f, 0.5f};
+	float specular2[] = {1.0f, 1.0f, 1.0f};
+	
+	glEnable(GL_LIGHTING);
+	
+	glLightfv(GL_LIGHT0, GL_AMBIENT, ambient0);
+	glLightfv(GL_LIGHT0, GL_DIFFUSE, diffuse0);
+	glLightfv(GL_LIGHT0, GL_SPECULAR, specular0);
+	glEnable(GL_LIGHT0);
+	
+	glLightfv(GL_LIGHT1, GL_AMBIENT, ambient1);
+	glLightfv(GL_LIGHT1, GL_DIFFUSE, diffuse1);
+	glLightfv(GL_LIGHT1, GL_SPECULAR, specular1);
+	glEnable(GL_LIGHT1);
+	
+	glLightfv(GL_LIGHT2, GL_AMBIENT, ambient2);
+	glLightfv(GL_LIGHT2, GL_DIFFUSE, diffuse2);
+	glLightfv(GL_LIGHT2, GL_SPECULAR, specular2);
+	glEnable(GL_LIGHT2);
+}
+
+//Attiva le luci nel livello DESERTO
+void displayDesertLights(void)
+{
+	float light0Position[] = {0.0f, 1.0f, 0.0f, 0.0f};
+	float light1Position[] = {1.0f, 0.0f, 1.0f, 0.0f};
+	float light2Position[] = {-1.0f, 0.0f, -1.0f, 0.0f};	
+	
+	glLightfv(GL_LIGHT0, GL_POSITION, light0Position);
+	glLightfv(GL_LIGHT1, GL_POSITION, light1Position);
+	glLightfv(GL_LIGHT2, GL_POSITION, light2Position);
+}
+
+//Attiva le luci nel livello URBANO
+void displayUrbanLights(void)
+{
+	float light0Position[] = {0.0f, 1.0f, 0.0f, 0.0f};
+	float light1Position[] = {1.0f, 0.0f, 1.0f, 0.0f};
+	float light2Position[] = {-1.0f, 0.0f, -1.0f, 0.0f};	
+	
+	glLightfv(GL_LIGHT0, GL_POSITION, light0Position);
+	glLightfv(GL_LIGHT1, GL_POSITION, light1Position);
+	glLightfv(GL_LIGHT2, GL_POSITION, light2Position);
+}
 
 //Abilita l'illuminazione della scena
 void lightOn(void)
@@ -208,26 +296,7 @@ void reshape ( int w, int h)
 //inizializzazione
 void init(void)
 {
-	float ambient[] = {1.0f, 1.0f, 1.0f};
-	float diffuse[] = {1.0f, 1.0f, 1.0f};
-	float specular[] = {1.0f, 1.0f, 1.0f};
-	
-	glEnable(GL_LIGHTING);
-	
-	glLightfv(GL_LIGHT0, GL_AMBIENT, ambient);
-	glLightfv(GL_LIGHT0, GL_DIFFUSE, diffuse);
-	glLightfv(GL_LIGHT0, GL_SPECULAR, specular);
-	//glEnable(GL_LIGHT0);
-	
-	glLightfv(GL_LIGHT1, GL_AMBIENT, ambient);
-	glLightfv(GL_LIGHT1, GL_DIFFUSE, diffuse);
-	glLightfv(GL_LIGHT1, GL_SPECULAR, specular);
-	glEnable(GL_LIGHT1);
-	
-	glLightfv(GL_LIGHT2, GL_AMBIENT, ambient);
-	glLightfv(GL_LIGHT2, GL_DIFFUSE, diffuse);
-	glLightfv(GL_LIGHT2, GL_SPECULAR, specular);
-	//glEnable(GL_LIGHT2);
+	setDesertLights();
 	
 	// da usare solo insieme a glColor per definire un colore indipendente dalle sorgenti di luce!
 	//	glColorMaterial(GL_FRONT, GL_DIFFUSE);
@@ -254,7 +323,7 @@ void init(void)
 	//carro armato
 	userTank.scale = 1.0f;
 	userTank.pos[0] = 0.0f;
-	userTank.pos[1] = 1.0f;
+	userTank.pos[1] = 0.35f;
 	userTank.pos[2] = 0.0f;
 	userTank.v[0] = 0.0f;
 	userTank.v[1] = 0.0f;
@@ -292,21 +361,13 @@ void init(void)
 	//carico i modelli
 	
 	objTank[0] = (obj*) loadOBJ("obj/tank_body.obj");
-	
 	objTank[1] = (obj*) loadOBJ("obj/tread.obj");
 	objTank[2] = (obj*) loadOBJ("obj/tread2.obj");
 	objTank[3] = (obj*) loadOBJ("obj/tread3.obj");
 	objTank[4] = (obj*) loadOBJ("obj/tank_turret.obj");
 	objTank[5] = (obj*) loadOBJ("obj/tank_cannon.obj");
+	
 	//obj1 = loadOBJ("obj/tank_body.obj");
-	//objTank[0] = loadOBJ("obj/skyl.obj");
-	/*loadOBJ("obj/tread.obj", 1);
-	 loadOBJ("obj/tread2.obj", 2);
-	 loadOBJ("obj/tread3.obj", 3);
-	 loadOBJ("obj/tank_turret.obj", 4);
-	 loadOBJ("obj/tank_cannon.obj", 5);
-	 loadOBJ("obj/skyl.obj", 6);
-	 loadOBJ("obj/tank_body.obj", 7);*/
 	
 	//carico il livello
 	levelMap = loadLevel("levels/sample.lvl");
@@ -315,9 +376,7 @@ void init(void)
 //visualizzazione
 void display(void)
 {
-	float light0Position[] = {0.0f, 70.0f, 0.0f, 1.0f};
-	float light1Position[] = {0.0f, 10.0f, 0.0f, 1.0f};
-	float light2Position[] = {-20.0f, 0.0f, 0.0f, 1.0f};
+	displayDesertLights();
 	
 	glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	glLoadIdentity();
@@ -353,17 +412,15 @@ void display(void)
 				  0.0f, 1.0f, 0.0f);//Up
     }
 	
-	//glLightfv(GL_LIGHT0, GL_POSITION, light0Position);
-	glLightfv(GL_LIGHT1, GL_POSITION, light1Position);
-	//glLightfv(GL_LIGHT2, GL_POSITION, light2Position);
-	
 	//disegno i modelli
 	
 	//GRIGLIA
-	lightOff();
-	makeGrid(100.0f,100.0f,20.0f);
-	lightOn();
+//	lightOff();
+//	makeGrid(100.0f,100.0f,20.0f);
+//	lightOn();
 	
+	//LIVELLO
+	drawLevel(levelMap);
 	
     //CARRO ARMATO UTENTE
 	glPushMatrix();

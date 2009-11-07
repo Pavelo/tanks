@@ -77,8 +77,8 @@ obj* loadOBJ(char* path)
 {
 	int loaded;
 	char line[100];
-	obj *model;
-	model = (obj *) malloc(sizeof(obj));
+	obj* model;
+	model = (obj*) malloc(sizeof(obj));
 	
 	int vCount = 0;
 	int vtCount = 0;

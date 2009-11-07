@@ -10,6 +10,23 @@ d 0
 e 4
 
 # Posizione sulla mappa di un tipo di ostacolo. Il numero indica il tipo di ostacolo
-o0 20 12
-o0 23 33
-o1 5 14
+o0 0 0
+o0 0 1
+o1 0 2
+
+# Rappresentazione della mappa. Ad ogni carattere corrisponde un elemento del livello (terreno oppure ostacolo)
+# Legenda:
+# o terreno
+# Y cactus
+# n trincea chiusa nord
+# u trincea chiusa sud
+# ( trincea chisua ovest
+# ) trincea chiusa est
+# = trincea aperta est-ovest
+# I trincea aperta nord-sud
+
+m YoooY
+m noooo
+m uoooo
+m o(=)o
+m YoooY
