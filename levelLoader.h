@@ -4,15 +4,14 @@
 
 typedef struct
 {
-	int x;
-	int y;
 	int type;
 	obj* model;
 } obstacle;
 
 typedef struct
 {
-	int side;
+	int width;
+	int height;
 	int enemies;
 	obstacle obs[40][40];
 } map;

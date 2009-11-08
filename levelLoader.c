@@ -29,42 +29,16 @@ map* loadLevel(char* path)
 	{
 		while (fgets(line, 99, fp))
 		{
-			// dimensioni della mappa
-			if (line[0] == 'd')
-			{
-				sscanf(line, "%*c %d", &dim);
-				switch (dim)
-				{
-					case 0:
-						myMap->side = 5;
-						break;
-					case 1:
-						myMap->side = 30;
-						break;
-					case 2:
-						myMap->side = 40;
-						break;
-					default:
-						myMap->side = 20;
-						break;
-				}
-			}
 			// numero di nemici
-			else if (line[0] == 'e')
+			if (line[0] == 'e')
 			{
 				sscanf(line, "%*c %d", &myMap->enemies);
 			}
-			// ostacolo
-			else if (line[0] == 'o')
-			{
-//				sscanf(line, "%*c%d %d %d", &myMap->obs[i].type, &myMap->obs[i].x, &myMap->obs[i].y);
-//				myMap->obs[i].model = obs[myMap->obs[i].type];
-				
-				i++;
-			}
+			// mappa
 			else if (line[0] == 'm')
 			{
-				for (x=0; x<myMap->side; x++) {
+				x=0;
+				while (line[x+2] != 10) {	// finch non trovo un a capo (LF)
 					switch (line[x+2]) {
 						case 'o':
 							myMap->obs[x][y].model = obs[0];
@@ -93,10 +67,13 @@ map* loadLevel(char* path)
 						default:
 							break;
 					}
+					x++;
 				}
 				y++;
 			}
 		}
+		myMap->width = x;
+		myMap->height = y;
 		
 		fclose(fp);
 		
@@ -111,14 +88,14 @@ map* loadLevel(char* path)
 void drawLevel(map* myMap)
 {
 	int i, x, y;
-	float mapPos = -DIM_TILE * myMap->side;
+	float mapPos = -DIM_TILE * myMap->width;
 	
 	glPushMatrix();
 	{
 		glTranslatef(mapPos * 0.5f, 0.0f, mapPos);
-		for (y=0; y < myMap->side; y++)
+		for (y=0; y < myMap->height; y++)
 		{
-			for (x=0; x < myMap->side; x++) {
+			for (x=0; x < myMap->width; x++) {
 				glPushMatrix();
 				{
 					glTranslatef(x * DIM_TILE, 0.0f, y * DIM_TILE);
