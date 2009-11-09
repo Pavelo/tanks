@@ -176,7 +176,7 @@ void setUrbanLights(void)
 //Attiva le luci nel livello DESERTO
 void displayDesertLights(void)
 {
-	float light0Position[] = {0.0f, 1.0f, 0.0f, 0.0f};
+	float light0Position[] = {0.0f, 1.0f, 0.6f, 0.0f};
 	float light1Position[] = {1.0f, 0.0f, 1.0f, 0.0f};
 	float light2Position[] = {-1.0f, 0.0f, -1.0f, 0.0f};	
 	
@@ -283,7 +283,7 @@ void reshape ( int w, int h)
 	
 	glViewport(0, 0, w, h);
 	ar = (float)w/(float)h;
-	gluPerspective(45.0, ar, 0.2f, 300.0f);
+	gluPerspective(45.0, ar, 0.2f, 500.0f);
 	
 	
 	glMatrixMode(GL_MODELVIEW);
@@ -422,9 +422,15 @@ void display(void)
 	//LIVELLO
 	drawLevel(levelMap);
 	
+	//drawOBJ(levelMap->background);
+	
     //CARRO ARMATO UTENTE
 	glPushMatrix();
 	glTranslatef(userTank.pos[0], userTank.pos[1], userTank.pos[2]);
+	glPushMatrix();
+	glScalef(150.0f, 150.0f, 150.0f);
+	drawOBJ(levelMap->sky);
+	glPopMatrix();
 	glRotatef(userTank.rot,0.0f,1.0f,0.0f);
 	//turret
 	glPushMatrix();

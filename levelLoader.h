@@ -14,6 +14,8 @@ typedef struct
 	int height;
 	int enemies;
 	obstacle obs[40][40];
+	obj* sky;
+	obj* background[2];
 } map;
 
 map* loadLevel(char* path);
