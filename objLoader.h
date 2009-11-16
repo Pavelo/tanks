@@ -1,3 +1,5 @@
+#include "utils.h"
+
 typedef struct
 {
 	
@@ -64,6 +66,14 @@ typedef struct
 
 typedef struct
 {
+	float w;
+	float h;
+	float d;
+	float3 pivot;
+} BoundingBox;
+
+typedef struct
+{
 	Vertex v[50000];
 	VTexture vt[50000];
 	VNormal vn[50000];
@@ -80,7 +90,11 @@ typedef struct
 	int textureId;
 	char textureName[32];
 	char texturePath[32];
+	
+	BoundingBox b;
 } obj;
 
 obj* loadOBJ(char* path);
 void drawOBJ(obj* model);
+void defBoundingBox(obj* model, float w, float h, float d);
+void isColliding(float3 point, float3 normal);

@@ -261,3 +261,19 @@ void drawOBJ(obj* model)
 	
 	glDisable(GL_TEXTURE_2D);
 }
+
+void defBoundingBox(obj* model, float w, float h, float d)
+{
+	model->b.w = w;
+	model->b.h = h;
+	model->b.d = d;
+	model->b.pivot.x = 0.0f;
+	model->b.pivot.y = h * 0.5f;
+	model->b.pivot.z = 0.0f;
+}
+
+void isColliding(float3 point, float3 normal)
+{
+	float re = fabsf( dotProduct(point, normal));
+	printf("%f\n", re);
+}

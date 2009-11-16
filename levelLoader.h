@@ -12,6 +12,8 @@ typedef struct
 {
 	int width;
 	int height;
+	float posX;
+	float posY;
 	int enemies;
 	obstacle obs[40][40];
 	obj* sky;

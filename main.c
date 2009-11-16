@@ -15,7 +15,6 @@
 #include <sys/time.h>
 #include <math.h>
 //#include <windows.h>
-//#include "tga.h"
 #include "levelLoader.h"
 
 //COSTANTI
@@ -104,8 +103,43 @@ int fixedView  = 0;
 map* levelMap;
 int animation = 0;
 obj* objTank[20];
+float2 repos;
 
 //FUNZIONI
+
+//Ritorna la struttura carro armato del giocatore
+tank getUserTank(void)
+{
+	return userTank;
+}
+
+float2 borderCollision()
+{
+	float2 rp = {0.0f, 0.0f};
+//	printf("w: %f\th: %f\td: %f\n", levelMap->obs[0][0].model->b.w, levelMap->obs[0][0].model->b.h, levelMap->obs[0][0].model->b.d);
+	printf("x: %f\tz: %f\n", userTank.pos[0], userTank.pos[2]);
+	if (userTank.pos[0] > levelMap->width * DIM_TILE * 0.5f)
+	{
+		rp.x += -0.50f;
+		rp.y += 0.0f;
+	}
+	if (userTank.pos[0] < -levelMap->width * DIM_TILE * 0.5f)
+	{
+		rp.x += 0.50f;
+		rp.y += 0.0f;
+	}
+	if (userTank.pos[2] > levelMap->height * DIM_TILE * 0.5f)
+	{
+		rp.x += 0.0f;
+		rp.y += -0.50f;
+	}
+	if (userTank.pos[2] < -levelMap->height * DIM_TILE * 0.5f)
+	{
+		rp.x += 0.0f;
+		rp.y += 0.50f;
+	}
+	return rp;
+}
 
 //Crea l'illuminazione per il livello DESERTO
 void setDesertLights(void)
@@ -359,15 +393,12 @@ void init(void)
 	userTank.userTreadR.pos[2] = 0.62f;
 	
 	//carico i modelli
-	
 	objTank[0] = (obj*) loadOBJ("obj/tank_body.obj");
 	objTank[1] = (obj*) loadOBJ("obj/tread.obj");
 	objTank[2] = (obj*) loadOBJ("obj/tread2.obj");
 	objTank[3] = (obj*) loadOBJ("obj/tread3.obj");
 	objTank[4] = (obj*) loadOBJ("obj/tank_turret.obj");
 	objTank[5] = (obj*) loadOBJ("obj/tank_cannon.obj");
-	
-	//obj1 = loadOBJ("obj/tank_body.obj");
 	
 	//carico il livello
 	levelMap = loadLevel("levels/sample.lvl");
@@ -421,8 +452,6 @@ void display(void)
 	
 	//LIVELLO
 	drawLevel(levelMap);
-	
-	//drawOBJ(levelMap->background);
 	
     //CARRO ARMATO UTENTE
 	glPushMatrix();
@@ -497,15 +526,6 @@ void display(void)
 		 kkk += 1.0f;
 		 */
     }
-	
-    //LANDSCAPE
-	/*	lightOff();
-	 glPushMatrix();
-	 glScalef(150.0f, 150.0f, 150.0f);
-	 drawOBJ(6);
-	 glPopMatrix();
-	 lightOn();
-	 */
 	
 	glutSwapBuffers();
 }
@@ -619,6 +639,10 @@ void idle(void)
 	
 	userTank.enginePower = 0.0f;
 	
+	repos = borderCollision();
+	userTank.pos[0] += repos.x;
+	userTank.pos[2] += repos.y;
+	
 	//FISICA PALLOTTOLE
 	bullets *p;
 	//elimina dalla struttura la radice con posizione Y negativa
@@ -645,8 +669,8 @@ void idle(void)
     }
 	
 	//animation settings
-	if(fabs(speed)<6.0f)
-		animation += 1*fabs(speed)*0.5;
+	if(fabsf(speed)<6.0f)
+		animation += 1*fabsf(speed)*0.5;
 	else
 		animation += 3;
 	

@@ -13,6 +13,7 @@ map* loadLevel(char* path)
 	
 	myMap = (map*) malloc(sizeof(map));
 	
+	// Caricamento modelli
 	myMap->sky = (obj*) loadOBJ("obj/sky.obj");
 	myMap->background[0] = (obj*) loadOBJ("obj/des_wall.obj");
 	myMap->background[1] = (obj*) loadOBJ("obj/des_mountain.obj");
@@ -24,6 +25,18 @@ map* loadLevel(char* path)
 	obs[5] = (obj*) loadOBJ("obj/des_trench_end_s.obj");
 	obs[6] = (obj*) loadOBJ("obj/des_trench_end_w.obj");
 	obs[7] = (obj*) loadOBJ("obj/des_trench_end_e.obj");
+	
+	// Definisco le dimensioni dei modelli
+	defBoundingBox(obs[0], 1.0f*DIM_TILE, 0.0f, 1.0f*DIM_TILE);
+	defBoundingBox(obs[1], 1.0f*DIM_TILE, 1.5f*DIM_TILE, 1.0f*DIM_TILE);
+	defBoundingBox(obs[2], 1.0f*DIM_TILE, 0.5f, 1.0f*DIM_TILE);
+	defBoundingBox(obs[3], 1.0f*DIM_TILE, 0.5f, 1.0f*DIM_TILE);
+	defBoundingBox(obs[4], 1.0f*DIM_TILE, 0.5f, 1.0f*DIM_TILE);
+	defBoundingBox(obs[5], 1.0f*DIM_TILE, 0.5f, 1.0f*DIM_TILE);
+	defBoundingBox(obs[6], 1.0f*DIM_TILE, 0.5f, 1.0f*DIM_TILE);
+	defBoundingBox(obs[7], 1.0f*DIM_TILE, 0.5f, 1.0f*DIM_TILE);
+	
+//	isColliding(obs[0].b.pivot, {1.0f, })
 	
 	FILE *fp = fopen(path,"r");
 	
@@ -76,6 +89,8 @@ map* loadLevel(char* path)
 		}
 		myMap->width = x;
 		myMap->height = y;
+		myMap->posX = -floor(myMap->width * 0.5f) * DIM_TILE + (1 - fmodf(myMap->width, 2)) * 0.5f * DIM_TILE;
+		myMap->posY = -floor(myMap->height * 0.5f) * DIM_TILE + (1 - fmodf(myMap->height, 2)) * 0.5f * DIM_TILE;
 		
 		fclose(fp);
 		
@@ -90,19 +105,19 @@ map* loadLevel(char* path)
 void drawLevel(map* myMap)
 {
 	int i, x, y;
-	float tileCorner = -DIM_TILE * 0.5f;
-	float mapPosX = myMap->width * tileCorner;
-	float mapPosY = myMap->height * tileCorner;
 	
 	glPushMatrix();
-		glPushMatrix();
-			glTranslatef(tileCorner, 0.0f, tileCorner);
-			glScalef(myMap->width * DIM_TILE, fmin(myMap->width * DIM_TILE, myMap->height *DIM_TILE), myMap->height * DIM_TILE);
+		glPushMatrix(); // disegno il muro
+			glScalef(myMap->width * DIM_TILE, 140.0f, myMap->height * DIM_TILE);
 			glEnable(GL_RESCALE_NORMAL);
 			drawOBJ(myMap->background[0]);
+		glPopMatrix();
+		glPushMatrix(); // disegno le montagne
+			glScalef(myMap->width * DIM_TILE, fmin(myMap->width * DIM_TILE, myMap->height *DIM_TILE), myMap->height * DIM_TILE);
+			glEnable(GL_RESCALE_NORMAL);
 			drawOBJ(myMap->background[1]);
 		glPopMatrix();
-		glTranslatef(mapPosX, 0.0f, mapPosY);
+		glTranslatef(myMap->posX, 0.0f, myMap->posY);
 		for (y=0; y < myMap->height; y++)
 		{
 			for (x=0; x < myMap->width; x++) {
