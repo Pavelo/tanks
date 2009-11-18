@@ -67,26 +67,28 @@ typedef struct _tread tread;
 
 struct _tank
 {
-	float scale;
-	float pos[3];
-	float v[3];
-	float a[3];
-	float rot;
-	tread userTreadL;
-	tread userTreadR;
-	turret userTurret;
-	float enginePower;
-	float throttle;
-	float speed;
-	float frictionForce;
-	float mass;
+	float scale; 
+	float pos[3];             //vettore per la posizione
+	float v[3];               //vettore per la velocità
+	float a[3];               //vettore per l'accelerazione
+	float rot;                //valore in gradi per la rotazione
+	tread userTreadL;         //struttura per il cingolo sinistro
+	tread userTreadR;         //struttura per il cingolo destro
+	turret userTurret;        //struttura per la torretta
+	float frictionForce;      //forza di attrito
+	float throttle;           //modulo accelerazione
+	float speed;              //modulo velocità
+	float enginePower;        //potenza erogata dal motore
+	float mass;               //massa del carro armato
 	float iperBoostAccumul;
 	float iperBoost;
-	bullets *bulletRoot;
-	int ammo;
-	float life;
-	int state;
-	int animation;
+	bullets *bulletRoot;      //struttura per i proiettili
+	int ammo;                 //munizioni disponibili
+	float life;               //valore di vita
+	float rechargeTime;       //tempo passato per la ricarica
+	float rechargeNeeded;     //tempo richiesto per la ricarica
+	int state;                //stato: [0]-morto [1]-difendi [2]-temporeggia [3]-attacca
+	int animation;            //valore per l'animazione dei cingoli
 };
 typedef struct _tank tank;
 
@@ -110,41 +112,46 @@ int turretView = 0;
 int fixedView  = 0;
 map* levelMap;
 obj* objTank[20];
-float2 repos;
 //stampe a video
 char stampe[80];
 
 //FUNZIONI
 
-float2 borderCollision(tank* t)
+// Controlla se  avvenuta una collisione con i bordi della mappa
+void borderCollision(tank* t)
 {
-	float2 rp = {1.0f, 1.0f};
-	float attenuation = 0.6f;
-//	printf("w: %f\th: %f\td: %f\n", levelMap->obs[0][0].model->b.w, levelMap->obs[0][0].model->b.h, levelMap->obs[0][0].model->b.d);
-//	printf("x: %f\tz: %f\n", t->pos[0], t->pos[2]);
-	if (t->pos[0] > levelMap->width * DIM_TILE * 0.5f - TANK_RAD)
+	float attenuation = 0.1f;
+	float halfScale = DIM_TILE * 0.5f;
+	printf("%f\n", tanks[0].rot);
+
+	if (t->pos[0] > levelMap->width * halfScale - TANK_RAD) // confine est
 	{
-		rp.x = -attenuation;
-		rp.y = attenuation;
+		t->v[0] *= -attenuation;
+		t->v[2] *= attenuation;
+		t->pos[0] = levelMap->width * halfScale - TANK_RAD;
+		t->rot += cosf(t->rot*M_PI/180.f);
 	}
-	if (t->pos[0] < -levelMap->width * DIM_TILE * 0.5f + TANK_RAD)
+	if (t->pos[0] < -levelMap->width * halfScale + TANK_RAD) // confine ovest
 	{
-		rp.x = -attenuation;
-		rp.y = attenuation;
+		t->v[0] *= -attenuation;
+		t->v[2] *= attenuation;
+		t->pos[0] = -levelMap->width * halfScale + TANK_RAD;
+		t->rot -= cosf(t->rot*M_PI/180.f);
 	}
-	if (t->pos[2] > levelMap->height * DIM_TILE * 0.5f - TANK_RAD)
+	if (t->pos[2] > levelMap->depth * halfScale - TANK_RAD) // confine nord
 	{
-		rp.x = attenuation;
-		rp.y = -attenuation;
+		t->v[0] *= attenuation;
+		t->v[2] *= -attenuation;
+		t->pos[2] = levelMap->depth * halfScale - TANK_RAD;
+		t->rot -= sinf(t->rot*M_PI/180.f);
 	}
-	if (t->pos[2] < -levelMap->height * DIM_TILE * 0.5f + TANK_RAD)
+	if (t->pos[2] < -levelMap->depth * halfScale + TANK_RAD) // confine sud
 	{
-		rp.x = attenuation;
-		rp.y = -attenuation;
+		t->v[0] *= attenuation;
+		t->v[2] *= -attenuation;
+		t->pos[2] = -levelMap->depth * halfScale + TANK_RAD;
+		t->rot += sinf(t->rot*M_PI/180.f);
 	}
-	rp.x *= t->v[0];
-	rp.y *= t->v[2];
-	return rp;
 }
 
 //Crea l'illuminazione per il livello DESERTO
@@ -274,7 +281,23 @@ void orthogonalEnd (void) {
 void renderBitmapString(float x, float y, void *font, char *string)
 {
     char *c;
-	glRasterPos2f(x,y);
+	
+	
+    glRasterPos2f(x+1,y+1);
+    glColor3f(0.0f, 0.0f, 0.0f);
+    for (c=string; *c != '\0'; c++)
+    {
+		glutBitmapCharacter(font, *c);
+    }
+	
+    glRasterPos2f(x,y);
+	glColor3f(1.0f, 1.0f, 1.0f);
+    for (c=string; *c != '\0'; c++)
+    {
+		glutBitmapCharacter(font, *c);
+    }
+    glRasterPos2f(x-1,y-1);
+	glColor3f(1.0f, 1.0f, 1.0f);
     for (c=string; *c != '\0'; c++)
     {
 		glutBitmapCharacter(font, *c);
@@ -308,6 +331,7 @@ void makeGrid(float lenght, float width, float nol)
 void shoot(tank *tankT)
 {
 	tankT->ammo--;
+	tankT->rechargeTime = 0.0f;
 	bullets *b;
 	b = malloc(sizeof(bullets));
 	b->bullet.a[0] = 0.0f;
@@ -318,15 +342,31 @@ void shoot(tank *tankT)
 	b->bullet.pos[1] = tankT->pos[1] + tankT->userTurret.pos[1] + tankT->userTurret.tankCannon.pos[1] + 2.2f*sin((tankT->userTurret.tankCannon.rot)*M_PI/180.0f);
 	b->bullet.pos[2] = tankT->pos[2] + (-0.83f + tankT->userTurret.pos[2] + tankT->userTurret.tankCannon.pos[2])* cos((tankT->rot+tankT->userTurret.rot)*M_PI/180.0f);
 	b->bullet.radius = 1.0f;
-	b->bullet.v[0] = 50.0f * sin((tankT->rot+tankT->userTurret.rot)*M_PI/180.0f) - tankT->v[0];
-	b->bullet.v[1] = 12.0f * sin((tankT->userTurret.tankCannon.rot)*M_PI/180.0f);
-	b->bullet.v[2] = 50.0f * cos((tankT->rot+tankT->userTurret.rot)*M_PI/180.0f) - tankT->v[2];
+	b->bullet.v[0] = 10.0f * sin((tankT->rot+tankT->userTurret.rot)*M_PI/180.0f) - tankT->v[0];
+	b->bullet.v[1] = 5.0f * sin((tankT->userTurret.tankCannon.rot)*M_PI/180.0f);
+	b->bullet.v[2] = 10.0f * cos((tankT->rot+tankT->userTurret.rot)*M_PI/180.0f) - tankT->v[2];
 	
 	b->next = tankT->bulletRoot;
 	tankT->bulletRoot = b;
 }
 
-float bodyRotate(float angle,float angleSign,float currentRotation)
+//controlla se un angolo di rotazione è all'interno di un certo step
+int checkRotationInStep(float angle,float angleSign,float currentRotation,float step)
+{
+    if
+		(
+		 (currentRotation>(angle*angleSign*180.0f/M_PI)-step && currentRotation<(angle*angleSign*180.0f/M_PI)+step) 
+		 ||
+		 (fabs(currentRotation)+step > 180.0f && fabs(currentRotation)>(angle*180.0f/M_PI)-step && fabs(currentRotation)<(angle*180.0f/M_PI)+step)
+		 )
+        return 1;
+    else
+        return 0;
+}
+
+//restituisce un valore da aggiungere alla rotazione per avvicinarsi alla rotazione 
+//desiderata(angle*angleSign) dall'angolo attuale di rotazione(currentRotation)
+float rotateTowards(float angle,float angleSign,float currentRotation)
 {
     float limitR = angle*angleSign - M_PI*angleSign;
     if(
@@ -390,32 +430,47 @@ void attackEnemy(tank *tankT)
 	//all'interno della zona di raggio step frena e gira la torretta verso il carro armato nemico
 	if(((reduction>=0.0f && reduction<1.0f) || (reduction>-1.0f && reduction<0.0f)))
 	{
-		tankT->v[0] *= 0.94f;
-		tankT->v[2] *= 0.94f;
+		tankT->v[0] *= 0.90f;
+		tankT->v[2] *= 0.90f;
 		//bisognerebbe anche qui trattare la rotazione come movimento graduale
 		//e considerare tutti i casi di rotazione
-		tankT->userTurret.rot = -tankT->rot + angle*XSign*180.0f/M_PI;
-		//tankT->enginePower = 100.0f*reduction;
+		float actualRotation = (tankT->userTurret.rot + tankT->rot);
+		if(actualRotation>180.0f)
+			actualRotation -= 360.0f;
+		if(actualRotation<-180.0f)
+			actualRotation += 360.0f;
+		float stepR = 2.0f;
+		if(checkRotationInStep(angle,XSign,actualRotation,stepR)==1)
+		{
+			if(tankT->rechargeTime >= tankT->rechargeNeeded)
+			{
+				shoot(tankT);
+			}
+		}
+		else
+		{
+			//actualRotation = rotateTowards(...,actualRotation)
+			//torret.rot + tank.rot = rotateTowards(...,actualRotation)
+			//torret.rot = rotateTowards(...,actualRotation) - tank.rot
+			tankT->userTurret.rot = rotateTowards(angle,XSign,actualRotation) - tankT->rot;
+		}
 	}
 	//all'esterno della zona di raggio step ruota verso il nemico ed avvicinati
 	else 
 	{    
 		//se la rotazione è entro lo step di rotazione del nemico
 		float stepR = 2.0f;
-		if( 
-		   ((tankT->rot)>(angle*XSign*180.0f/M_PI)-stepR && (tankT->rot)<(angle*XSign*180.0f/M_PI)+stepR) 
-		   ||
-		   (fabs(tankT->rot)+stepR > 180.0f && fabs(tankT->rot)>(angle*180.0f/M_PI)-stepR && fabs(tankT->rot)<(angle*180.0f/M_PI)+stepR)
-		   )
+		if(checkRotationInStep(angle,XSign,tankT->rot,stepR)==1)
 		{
 			//accelera
-			tankT->enginePower = 100.0f;
+			tankT->enginePower = 100.0f*reduction;
 			//raddrizza torretta nel cammino
 			float TSign = 1.0f;
 			if(tankT->userTurret.rot<0.0f)
 				TSign = -1.0f;
-			if(fabs(tankT->userTurret.rot)>0.1f)
+			if(fabs(tankT->userTurret.rot)>2.0f)
 				tankT->userTurret.rot += -1.5f * TSign;
+			
 		}
 		//altrimenti se la rotazione è al di fuori dello step di rotazione del nemico
 		else
@@ -429,14 +484,17 @@ void attackEnemy(tank *tankT)
 			//se sei fermo ruota verso la nuova posizione
 			else
 			{
-				tankT->rot = bodyRotate(angle,XSign,tankT->rot);
+				tankT->rot = rotateTowards(angle,XSign,tankT->rot);
 			}
+			//raddrizza torretta nel cammino
+			float TSign = 1.0f;
+			if(tankT->userTurret.rot<0.0f)
+				TSign = -1.0f;
+			if(fabs(tankT->userTurret.rot)>2.0f)
+				tankT->userTurret.rot += -1.5f * TSign;
 			
 		}
 	}
-	//sprintf(stampe,"Rotazione nemico: %f Rotazione utente: %f",tankT->rot,(angle*180.0f/M_PI));
-	
-	
 }
 
 void runAway(tank *tankT)
@@ -510,7 +568,7 @@ void init(void)
 {
 	//carico il livello
 	levelMap = loadLevel("levels/sample.lvl");
-
+	
 	setDesertLights();
 	
 	// da usare solo insieme a glColor per definire un colore indipendente dalle sorgenti di luce!
@@ -575,6 +633,8 @@ void init(void)
     	tanks[i].bulletRoot = NULL;
     	tanks[i].ammo = 10;
     	tanks[i].life = 100.0f;
+    	tanks[i].rechargeTime = 0.0f;
+    	tanks[i].rechargeNeeded = 10.0f;
     	tanks[i].state = 2;
     	tanks[i].animation = 0;
     	//torretta
@@ -651,9 +711,9 @@ void display(void)
 	//disegno i modelli
 	
 	//GRIGLIA
-//	lightOff();
-//	makeGrid(100.0f,100.0f,20.0f);
-//	lightOn();
+	//	lightOff();
+	//	makeGrid(100.0f,100.0f,20.0f);
+	//	lightOn();
 	
 	//LIVELLO
 	drawLevel(levelMap);
@@ -723,7 +783,7 @@ void display(void)
 			glRotatef(tanks[i].userTurret.rot + tanks[i].rot,0.0f,1.0f,0.0f);
 			glRotatef(tanks[i].userTurret.tankCannon.rot,1.0f,0.0f,0.0f);
 			glTranslatef(0.0f,0.0f,-tanks[i].userTurret.tankCannon.length);
-			glutSolidSphere(1.2f, 20, 20);
+			glutSolidSphere(0.1f, 10, 10);
             glPopMatrix();
             /*glPushMatrix(); disegna sfere per controllare cancellazione da struttura corretta
 			 glTranslatef(2.0f*kkk,0.0f,0.0f);
@@ -741,6 +801,14 @@ void display(void)
 	glScalef(150.0f, 150.0f, 150.0f);
 	drawOBJ(levelMap->sky);
 	glPopMatrix();
+	
+	//sovraimpressioni ortogonali
+	orthogonalStart();
+	glPushMatrix();
+	glLoadIdentity();
+	renderBitmapString(5.0f,30.0f,GLUT_BITMAP_9_BY_15,stampe);
+	glPopMatrix();
+	orthogonalEnd();
 	
 	
 	glutSwapBuffers();
@@ -798,7 +866,8 @@ void keyboard(unsigned char key, int x, int y)
 			tanks[0].v[2] *= 0.5f;
 			break;
 		case 32: //Space
-			shoot(&tanks[0]);
+            if(tanks[0].rechargeTime>=tanks[0].rechargeNeeded)
+			    shoot(&tanks[0]);
 			break;
 	}
 }
@@ -819,6 +888,10 @@ void idle(void)
 	
 	for(i=0;i<nTanks;i++)
     {
+		// normalizzazione degli angoli tra 0¡ e 360¡ per evitare overflow
+		tanks[i].rot = fmodf(tanks[i].rot, 360.0f);
+		tanks[i].userTurret.rot = fmodf(tanks[i].userTurret.rot, 360.0f);
+		
         if(i!=0)
         {
             //intelligenza artificiale nemici
@@ -870,10 +943,7 @@ void idle(void)
     	tanks[i].enginePower = 0.0f;
         
 		// collisioni
-		repos = borderCollision(&tanks[i]);
-		tanks[i].v[0] = repos.x;
-		tanks[i].v[2] = repos.y;
-		
+		borderCollision(&tanks[i]);
 		
     	//FISICA PALLOTTOLE
     	bullets *p;
@@ -910,6 +980,10 @@ void idle(void)
                 p->bullet.v[2] += p->bullet.a[2]*deltaT;
             }
         }
+        
+        //tempo di ricarica per le pallottole
+        if(tanks[i].rechargeTime<tanks[i].rechargeNeeded)
+            tanks[i].rechargeTime += deltaT;
 		
     	//settings per le animazioni dei cingoli
     	if(fabs(tanks[i].speed)<6.0f)
@@ -918,6 +992,9 @@ void idle(void)
     	    tanks[i].animation += 3;
 		
     }//END FOR
+    
+    
+    sprintf(stampe,"Shoot Recharge: %f \n ciaooo",tanks[0].rechargeTime);
 	
 	glutPostRedisplay();
 }

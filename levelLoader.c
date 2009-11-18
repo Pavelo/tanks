@@ -88,9 +88,9 @@ map* loadLevel(char* path)
 			}
 		}
 		myMap->width = x;
-		myMap->height = y;
+		myMap->depth = y;
 		myMap->posX = -floor(myMap->width * 0.5f) * DIM_TILE + (1 - fmodf(myMap->width, 2)) * 0.5f * DIM_TILE;
-		myMap->posY = -floor(myMap->height * 0.5f) * DIM_TILE + (1 - fmodf(myMap->height, 2)) * 0.5f * DIM_TILE;
+		myMap->posY = -floor(myMap->depth * 0.5f) * DIM_TILE + (1 - fmodf(myMap->depth, 2)) * 0.5f * DIM_TILE;
 		
 		fclose(fp);
 		
@@ -108,17 +108,17 @@ void drawLevel(map* myMap)
 	
 	glPushMatrix();
 		glPushMatrix(); // disegno il muro
-			glScalef(myMap->width * DIM_TILE, 140.0f, myMap->height * DIM_TILE);
+			glScalef(myMap->width * DIM_TILE, 140.0f, myMap->depth * DIM_TILE);
 			glEnable(GL_RESCALE_NORMAL);
 			drawOBJ(myMap->background[0]);
 		glPopMatrix();
 		glPushMatrix(); // disegno le montagne
-			glScalef(myMap->width * DIM_TILE, fmin(myMap->width * DIM_TILE, myMap->height *DIM_TILE), myMap->height * DIM_TILE);
+			glScalef(myMap->width * DIM_TILE, fmin(myMap->width * DIM_TILE, myMap->depth *DIM_TILE), myMap->depth * DIM_TILE);
 			glEnable(GL_RESCALE_NORMAL);
 			drawOBJ(myMap->background[1]);
 		glPopMatrix();
 		glTranslatef(myMap->posX, 0.0f, myMap->posY);
-		for (y=0; y < myMap->height; y++)
+		for (y=0; y < myMap->depth; y++)
 		{
 			for (x=0; x < myMap->width; x++) {
 				glPushMatrix();

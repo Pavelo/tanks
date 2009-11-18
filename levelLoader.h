@@ -11,7 +11,7 @@ typedef struct
 typedef struct
 {
 	int width;
-	int height;
+	int depth;
 	float posX;
 	float posY;
 	int enemies;
