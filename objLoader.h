@@ -1,32 +1,35 @@
 #include "utils.h"
 
-typedef struct
+struct _Vertex
 {
 	
 	float x;
 	float y;
 	float z;
 	
-} Vertex;
+};
+typedef struct _Vertex Vertex;
 
-typedef struct
+struct _VTexture
 {
 	
 	float u;
 	float v;
 	
-} VTexture;
+};
+typedef struct _VTexture VTexture;
 
-typedef struct
+struct _VNormal
 {
 	
 	float x;
 	float y;
 	float z;
 	
-} VNormal;
+};
+typedef struct _VNormal VNormal;
 
-typedef struct
+struct _Face
 {
 	
 	int v1;
@@ -45,9 +48,10 @@ typedef struct
 	int t4;
 	int n4;
 	
-} Face;
+};
+typedef struct _Face Face;
 
-typedef struct
+struct _Face3
 {
 	
 	int v1;
@@ -62,23 +66,24 @@ typedef struct
 	int t3;
 	int n3;
 	
-} Face3;
+};
+typedef struct _Face3 Face3;
 
-typedef struct
+struct _BoundingBox
 {
-	float w;
-	float h;
-	float d;
-	float3 pivot;
-} BoundingBox;
+	float3 max;
+	float3 min;
+};
+typedef struct _BoundingBox BoundingBox;
 
-typedef struct
+struct _obj
 {
 	Vertex v[50000];
 	VTexture vt[50000];
 	VNormal vn[50000];
 	Face f[50000];
 	Face3 f3[50000];
+	int vCount;
 	int fCount;
 	int f3Count;
 	
@@ -91,10 +96,12 @@ typedef struct
 	char textureName[32];
 	char texturePath[32];
 	
-	BoundingBox b;
-} obj;
+	BoundingBox bb;
+};
+typedef struct _obj obj;
 
 obj* loadOBJ(char* path);
 void drawOBJ(obj* model);
-void defBoundingBox(obj* model, float w, float h, float d);
-void isColliding(float3 point, float3 normal);
+void createBoundingBox(obj* model);
+void drawBoundingBox(BoundingBox *b);
+//void isColliding(float3 point, float3 normal);

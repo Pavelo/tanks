@@ -2,13 +2,14 @@
 
 #define DIM_TILE 5.0f
 
-typedef struct
+struct _obstacle
 {
-	int type;
 	obj* model;
-} obstacle;
+	float3 boundingVertices[8];
+};
+typedef struct _obstacle obstacle;
 
-typedef struct
+struct _map
 {
 	int width;
 	int depth;
@@ -18,7 +19,10 @@ typedef struct
 	obstacle obs[40][40];
 	obj* sky;
 	obj* background[2];
-} map;
+	int loaded;
+};
+typedef struct _map map;
 
 map* loadLevel(char* path);
 void drawLevel(map* myMap);
+void placeBoundingBox(obstacle *o, float3 *vertices);

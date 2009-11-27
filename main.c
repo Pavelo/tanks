@@ -21,6 +21,7 @@
 #define WIDTH 800
 #define HEIGHT 600
 #define TANK_RAD 3.0f
+#define radians(degrees) degrees*M_PI/180.0f
 
 //STRUTTURE
 //struttura palla di cannone
@@ -114,6 +115,9 @@ map* levelMap;
 obj* objTank[20];
 //stampe a video
 char stampe[80];
+char stampe2[80];
+char stampe3 [80];
+char rech[10];
 
 //FUNZIONI
 
@@ -122,36 +126,40 @@ void borderCollision(tank* t)
 {
 	float attenuation = 0.1f;
 	float halfScale = DIM_TILE * 0.5f;
-	printf("%f\n", tanks[0].rot);
-
+	
 	if (t->pos[0] > levelMap->width * halfScale - TANK_RAD) // confine est
 	{
 		t->v[0] *= -attenuation;
 		t->v[2] *= attenuation;
 		t->pos[0] = levelMap->width * halfScale - TANK_RAD;
-		t->rot += cosf(t->rot*M_PI/180.f);
+		t->rot += cosf(radians(t->rot));
 	}
 	if (t->pos[0] < -levelMap->width * halfScale + TANK_RAD) // confine ovest
 	{
 		t->v[0] *= -attenuation;
 		t->v[2] *= attenuation;
 		t->pos[0] = -levelMap->width * halfScale + TANK_RAD;
-		t->rot -= cosf(t->rot*M_PI/180.f);
+		t->rot -= cosf(radians(t->rot));
 	}
 	if (t->pos[2] > levelMap->depth * halfScale - TANK_RAD) // confine nord
 	{
 		t->v[0] *= attenuation;
 		t->v[2] *= -attenuation;
 		t->pos[2] = levelMap->depth * halfScale - TANK_RAD;
-		t->rot -= sinf(t->rot*M_PI/180.f);
+		t->rot -= sinf(radians(t->rot));
 	}
 	if (t->pos[2] < -levelMap->depth * halfScale + TANK_RAD) // confine sud
 	{
 		t->v[0] *= attenuation;
 		t->v[2] *= -attenuation;
 		t->pos[2] = -levelMap->depth * halfScale + TANK_RAD;
-		t->rot += sinf(t->rot*M_PI/180.f);
+		t->rot += sinf(radians(t->rot));
 	}
+}
+
+int isColliding(float3 p, BoundingBox* a)
+{
+	return p.x <= a->max.x && p.x >= a->min.x && p.y <= a->max.y && p.y >= a->min.y && p.z <= a->max.z && p.z >= a->min.z;
 }
 
 //Crea l'illuminazione per il livello DESERTO
@@ -281,27 +289,26 @@ void orthogonalEnd (void) {
 void renderBitmapString(float x, float y, void *font, char *string)
 {
     char *c;
-	
-	
-    glRasterPos2f(x+1,y+1);
-    glColor3f(0.0f, 0.0f, 0.0f);
-    for (c=string; *c != '\0'; c++)
-    {
-		glutBitmapCharacter(font, *c);
-    }
-	
+    glColor3f(1.0f, 1.0f, 1.0f);
     glRasterPos2f(x,y);
-	glColor3f(1.0f, 1.0f, 1.0f);
     for (c=string; *c != '\0'; c++)
     {
 		glutBitmapCharacter(font, *c);
     }
-    glRasterPos2f(x-1,y-1);
-	glColor3f(1.0f, 1.0f, 1.0f);
+    
+    glColor3f(0.0f, 0.5f, 0.0f);
+	glRasterPos2f(x+1,y+1);
     for (c=string; *c != '\0'; c++)
     {
 		glutBitmapCharacter(font, *c);
     }
+    glColor3f(0.0f, 0.0f, 0.0f);
+	glRasterPos2f(x+2,y+2);
+    for (c=string; *c != '\0'; c++)
+    {
+		glutBitmapCharacter(font, *c);
+    }
+	
 }
 
 
@@ -634,7 +641,7 @@ void init(void)
     	tanks[i].ammo = 10;
     	tanks[i].life = 100.0f;
     	tanks[i].rechargeTime = 0.0f;
-    	tanks[i].rechargeNeeded = 10.0f;
+    	tanks[i].rechargeNeeded = 3.0f;
     	tanks[i].state = 2;
     	tanks[i].animation = 0;
     	//torretta
@@ -658,13 +665,30 @@ void init(void)
     	tanks[i].userTreadR.pos[2] = 0.62f;
     }
 	
-	//carico i modelli
+	//carico i modelli del carro armato
 	objTank[0] = (obj*) loadOBJ("obj/tank_body.obj");
 	objTank[1] = (obj*) loadOBJ("obj/tread.obj");
 	objTank[2] = (obj*) loadOBJ("obj/tread2.obj");
 	objTank[3] = (obj*) loadOBJ("obj/tread3.obj");
 	objTank[4] = (obj*) loadOBJ("obj/tank_turret.obj");
 	objTank[5] = (obj*) loadOBJ("obj/tank_cannon.obj");
+	
+	//calcolo le bounding box delle parti principali del carro armato
+	createBoundingBox(objTank[0]);
+	createBoundingBox(objTank[4]);
+	createBoundingBox(objTank[5]);
+	
+	float matrix[4][4] =
+	{
+		{ 1.0f , 0.0f , 0.0f , 0.0f },
+		{ 0.0f , 1.0f , 0.0f , 0.0f },
+		{ 0.0f , 0.0f , 1.0f , 0.0f },
+		{ 0.0f , 0.0f , 0.0f , 1.0f }
+	};
+	float vector[4] = { 1.63460f , 2.0436f , 3.45f , 4.3460f };
+	float* res; 
+	res = matrixVecMult(matrix, vector);
+	printf("|%f|\n|%f|\n|%f|\n|%f|\n", res[0], res[1], res[2], res[3]);
 }
 
 //visualizzazione
@@ -807,6 +831,8 @@ void display(void)
 	glPushMatrix();
 	glLoadIdentity();
 	renderBitmapString(5.0f,30.0f,GLUT_BITMAP_9_BY_15,stampe);
+	renderBitmapString(5.0f,50.0f,GLUT_BITMAP_9_BY_15,stampe2);
+	renderBitmapString(5.0f,70.0f,GLUT_BITMAP_9_BY_15,stampe3);
 	glPopMatrix();
 	orthogonalEnd();
 	
@@ -889,8 +915,8 @@ void idle(void)
 	for(i=0;i<nTanks;i++)
     {
 		// normalizzazione degli angoli tra 0¡ e 360¡ per evitare overflow
-		tanks[i].rot = fmodf(tanks[i].rot, 360.0f);
-		tanks[i].userTurret.rot = fmodf(tanks[i].userTurret.rot, 360.0f);
+//		tanks[0].rot = fmodf(tanks[0].rot, 180.0f);
+//		tanks[i].userTurret.rot = fmodf(tanks[i].userTurret.rot, 180.0f);
 		
         if(i!=0)
         {
@@ -945,6 +971,15 @@ void idle(void)
 		// collisioni
 		borderCollision(&tanks[i]);
 		
+		if (tanks[i].rot > 180.0f)
+		{
+			tanks[i].rot -= 360.0f;
+		}
+		else if (tanks[i].rot < -180.0f)
+		{
+			tanks[i].rot += 360.0f;
+		}
+		
     	//FISICA PALLOTTOLE
     	bullets *p;
     	//elimina dalla struttura la radice con posizione Y negativa
@@ -991,11 +1026,32 @@ void idle(void)
     	else
     	    tanks[i].animation += 3;
 		
+		int x;
+		float y = tanks[0].rechargeNeeded*0.1f;
+		float y2 = 0.0f;
+		for(x=0;x<10;x++)
+		{
+			y2 += y;
+			if(y2<=tanks[0].rechargeTime)
+				rech[(int)x]='O';
+			else
+				rech[(int)x]='-';
+		}
     }//END FOR
     
-    
-    sprintf(stampe,"Shoot Recharge: %f \n ciaooo",tanks[0].rechargeTime);
+	sprintf(stampe,"Shoot Recharge |%s|",rech);
+	sprintf(stampe2,"Ammo |%i|",tanks[0].ammo);
+	sprintf(stampe3,"Speed |%i|",(int)fabs(tanks[0].speed));
+	float3 p = {tanks[0].pos[0], tanks[0].pos[1], tanks[0].pos[2]};
+	if (isColliding(p, &levelMap->obs[0][0].model->bb))
+	{
+		tanks[0].v[0] *= -0.0f;
+		tanks[0].v[2] *= 0.0f;
+		tanks[0].pos[2] = DIM_TILE * 0.5f;
+//		t->rot += cosf(radians(t->rot));
+	}
 	
+//	printf("%f\t\t\t%f\t\t\t%f\n", tanks[0].rot, tanks[1].rot, tanks[2].rot);
 	glutPostRedisplay();
 }
 

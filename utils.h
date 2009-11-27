@@ -1,14 +1,17 @@
-typedef struct
+struct _float2
 {
 	float x;
 	float y;
-} float2;
+};
+typedef struct _float2 float2;
 
-typedef struct
+struct _float3
 {
 	float x;
 	float y;
 	float z;
-} float3;
+};
+typedef struct _float3 float3;
 
 float dotProduct(float3 a, float3 b);
+float* matrixVecMult(float m[][4], float* v);

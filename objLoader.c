@@ -6,8 +6,8 @@
 #include "tga.h"
 #include "objLoader.h"
 
-//obj model;
 int txtId = 0;
+float m[16];
 
 int loadMTL(char* path, obj* model)
 {
@@ -80,7 +80,7 @@ obj* loadOBJ(char* path)
 	obj* model;
 	model = (obj*) malloc(sizeof(obj));
 	
-	int vCount = 0;
+	model->vCount = 0;
 	int vtCount = 0;
 	int vnCount = 0;
 	model->fCount = 0;
@@ -120,8 +120,8 @@ obj* loadOBJ(char* path)
 				// vertex
 				else
 				{
-					sscanf(line, "%*c %f %f %f", &model->v[vCount].x, &model->v[vCount].y, &model->v[vCount].z);
-					vCount++;
+					sscanf(line, "%*c %f %f %f", &model->v[model->vCount].x, &model->v[model->vCount].y, &model->v[model->vCount].z);
+					model->vCount++;
 				}
 			}
 			// face
@@ -167,7 +167,7 @@ obj* loadOBJ(char* path)
 					mtllibPath[i] = '\0';
 				}
 			}
-			//        	printf("v %f %f %f\n", model.v[vCount].x, model.v[vCount].y, model.v[vCount].z);
+			//        	printf("v %f %f %f\n", model.v[model->vCount].x, model.v[model->vCount].y, model.v[model->vCount].z);
 			//        	printf("%f %f %f\n", model.vn[f[model->fCount].n1-1].x, model.vn[f[model->fCount].n1-1].y, model.vn[f[model->fCount].n1-1].z);
 		}
 		loaded = 1;
@@ -259,21 +259,76 @@ void drawOBJ(obj* model)
 	
 	glEnd();
 	
+//	glPushMatrix();
+	glGetFloatv(GL_MODELVIEW_MATRIX, m);
+	glLoadIdentity();
+	glMultMatrixf(m);
+	drawBoundingBox(&model->bb);
+//	glPopMatrix();
+	
 	glDisable(GL_TEXTURE_2D);
 }
 
-void defBoundingBox(obj* model, float w, float h, float d)
+// crea una bounding box che rappresenta il volume in cui è inscritto il modello
+void createBoundingBox(obj* model)
 {
-	model->b.w = w;
-	model->b.h = h;
-	model->b.d = d;
-	model->b.pivot.x = 0.0f;
-	model->b.pivot.y = h * 0.5f;
-	model->b.pivot.z = 0.0f;
+	int i;
+	
+	model->bb.max.x = -10000.0f;
+	model->bb.max.y = -10000.0f;
+	model->bb.max.z = -10000.0f;
+	
+	model->bb.min.x = 10000.0f;
+	model->bb.min.y = 10000.0f;
+	model->bb.min.z = 10000.0f;
+	
+	for (i=0; i < model->vCount; i++) {
+		if (model->v[i].x > model->bb.max.x) model->bb.max.x = model->v[i].x;
+		if (model->v[i].y > model->bb.max.y) model->bb.max.y = model->v[i].y;
+		if (model->v[i].z > model->bb.max.z) model->bb.max.z = model->v[i].z;
+		
+		if (model->v[i].x < model->bb.min.x) model->bb.min.x = model->v[i].x;
+		if (model->v[i].y < model->bb.min.y) model->bb.min.y = model->v[i].y;
+		if (model->v[i].z < model->bb.min.z) model->bb.min.z = model->v[i].z;
+	}
 }
 
-void isColliding(float3 point, float3 normal)
+// rende visibile la bounding box associata al modello renderizzandola in wireframe
+void drawBoundingBox(BoundingBox *b)
 {
-	float re = fabsf( dotProduct(point, normal));
-	printf("%f\n", re);
-}
+	
+    glBegin (GL_LINE_LOOP);
+    glVertex3f(b->max.x,b->max.y,b->min.z); // 0
+    glVertex3f(b->min.x,b->max.y,b->min.z); // 1
+    glVertex3f(b->min.x,b->min.y,b->min.z); // 2
+    glVertex3f(b->max.x,b->min.y,b->min.z); // 3
+    glEnd();
+	
+    glBegin (GL_LINE_LOOP);
+    glVertex3f(b->max.x,b->min.y,b->max.z); // 4
+    glVertex3f(b->max.x,b->max.y,b->max.z); // 5
+    glVertex3f(b->min.x,b->max.y,b->max.z); // 6
+    glVertex3f(b->min.x,b->min.y,b->max.z); // 7
+    glEnd();
+	
+    glBegin (GL_LINE_LOOP);
+    glVertex3f(b->max.x,b->max.y,b->min.z); // 0
+    glVertex3f(b->max.x,b->max.y,b->max.z); // 5
+    glVertex3f(b->min.x,b->max.y,b->max.z); // 6
+    glVertex3f(b->min.x,b->max.y,b->min.z); // 1
+    glEnd();
+	
+    glBegin (GL_LINE_LOOP);
+    glVertex3f(b->max.x,b->min.y,b->max.z); // 4
+    glVertex3f(b->min.x,b->min.y,b->max.z); // 7
+    glVertex3f(b->min.x,b->min.y,b->min.z); // 2
+    glVertex3f(b->max.x,b->min.y,b->min.z); // 3
+	
+    glEnd();
+	
+} 
+//void isColliding(float3 point, float3 normal)
+//{
+//	float re = fabsf( dotProduct(point, normal));
+//	printf("%f\n", re);
+//}
