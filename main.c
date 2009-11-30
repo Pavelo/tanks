@@ -90,6 +90,7 @@ struct _tank
 	float rechargeNeeded;     //tempo richiesto per la ricarica
 	int state;                //stato: [0]-morto [1]-difendi [2]-temporeggia [3]-attacca
 	int animation;            //valore per l'animazione dei cingoli
+	BoundingBox boundingVol;  //bounding box che racchiude l'intero carro armato (coordinate world)
 };
 typedef struct _tank tank;
 
@@ -118,40 +119,45 @@ char stampe[80];
 char stampe2[80];
 char stampe3 [80];
 char rech[10];
+char printScreen[10][80];
+float mat[16];
+float4 vec;
+float4 res;
+
 
 //FUNZIONI
 
 // Controlla se  avvenuta una collisione con i bordi della mappa
 void borderCollision(tank* t)
 {
-	float attenuation = 0.1f;
+	float dumping = 0.1f;
 	float halfScale = DIM_TILE * 0.5f;
 	
 	if (t->pos[0] > levelMap->width * halfScale - TANK_RAD) // confine est
 	{
-		t->v[0] *= -attenuation;
-		t->v[2] *= attenuation;
+		t->v[0] *= -dumping;
+		t->v[2] *= dumping;
 		t->pos[0] = levelMap->width * halfScale - TANK_RAD;
 		t->rot += cosf(radians(t->rot));
 	}
 	if (t->pos[0] < -levelMap->width * halfScale + TANK_RAD) // confine ovest
 	{
-		t->v[0] *= -attenuation;
-		t->v[2] *= attenuation;
+		t->v[0] *= -dumping;
+		t->v[2] *= dumping;
 		t->pos[0] = -levelMap->width * halfScale + TANK_RAD;
 		t->rot -= cosf(radians(t->rot));
 	}
 	if (t->pos[2] > levelMap->depth * halfScale - TANK_RAD) // confine nord
 	{
-		t->v[0] *= attenuation;
-		t->v[2] *= -attenuation;
+		t->v[0] *= dumping;
+		t->v[2] *= -dumping;
 		t->pos[2] = levelMap->depth * halfScale - TANK_RAD;
 		t->rot -= sinf(radians(t->rot));
 	}
 	if (t->pos[2] < -levelMap->depth * halfScale + TANK_RAD) // confine sud
 	{
-		t->v[0] *= attenuation;
-		t->v[2] *= -attenuation;
+		t->v[0] *= dumping;
+		t->v[2] *= -dumping;
 		t->pos[2] = -levelMap->depth * halfScale + TANK_RAD;
 		t->rot += sinf(radians(t->rot));
 	}
@@ -678,17 +684,17 @@ void init(void)
 	createBoundingBox(objTank[4]);
 	createBoundingBox(objTank[5]);
 	
-	float matrix[4][4] =
-	{
-		{ 1.0f , 0.0f , 0.0f , 0.0f },
-		{ 0.0f , 1.0f , 0.0f , 0.0f },
-		{ 0.0f , 0.0f , 1.0f , 0.0f },
-		{ 0.0f , 0.0f , 0.0f , 1.0f }
-	};
-	float vector[4] = { 1.63460f , 2.0436f , 3.45f , 4.3460f };
-	float* res; 
-	res = matrixVecMult(matrix, vector);
-	printf("|%f|\n|%f|\n|%f|\n|%f|\n", res[0], res[1], res[2], res[3]);
+//	float matrix[4*4] =
+//	{
+//		1.0f , 0.0f , 0.0f , 0.0f ,
+//		0.0f , 1.0f , 0.0f , 0.0f ,
+//		0.0f , 0.0f , 1.0f , 0.0f ,
+//		0.0f , 0.0f , 0.0f , 1.0f 
+//	};
+//	float vector[4] = { 2.0f , 1.0f , 1.0f , 1.0f };
+//	float* res; 
+//	res = matrixVecMult(matrix, vector);
+//	printf("|%f|\n|%f|\n|%f|\n|%f|\n", res[0], res[1], res[2], res[3]);
 }
 
 //visualizzazione
@@ -820,11 +826,36 @@ void display(void)
     }//END FOR
 	
 	// diesegno il cielo
+//	glMatrixMode(GL_PROJECTION);
 	glPushMatrix();
 	glTranslatef(tanks[0].pos[0], tanks[0].pos[1], tanks[0].pos[2]);
-	glScalef(150.0f, 150.0f, 150.0f);
+	glScalef(300.0f, 300.0f, 300.0f);
 	drawOBJ(levelMap->sky);
 	glPopMatrix();
+//	glMatrixMode(GL_MODELVIEW);
+	
+	// riposiziono la bounding box dei carri armati su di essi
+	i=0;
+//	for (i=0; i<nTanks; i++)
+//	{
+		glPushMatrix();
+		glLoadIdentity();
+		glTranslatef(tanks[i].pos[0], tanks[i].pos[1], tanks[i].pos[2]);
+		glGetFloatv(GL_MODELVIEW_MATRIX, mat);
+		vec.x = 0.0f;
+		vec.y = 0.0f;
+		vec.z = 0.0f;
+		vec.w = 1.0f;
+		res = matrixVecMult(mat, vec);
+		for (i=0; i<4; i++)
+		{
+			sprintf(printScreen[i], "|%f   %f   %f   %f|", mat[0*4+i], mat[1*4+i], mat[2*4+i], mat[3*4+i]);
+		}
+		sprintf(printScreen[4], "");
+		sprintf(printScreen[5], "[%f   %f   %f   %f]", res.x, res.y, res.z, res.w);
+		
+		glPopMatrix();
+//	}
 	
 	//sovraimpressioni ortogonali
 	orthogonalStart();
@@ -833,6 +864,9 @@ void display(void)
 	renderBitmapString(5.0f,30.0f,GLUT_BITMAP_9_BY_15,stampe);
 	renderBitmapString(5.0f,50.0f,GLUT_BITMAP_9_BY_15,stampe2);
 	renderBitmapString(5.0f,70.0f,GLUT_BITMAP_9_BY_15,stampe3);
+	for (i=0; i<6; i++) {
+		renderBitmapString(5.0f,i*20+90.0f,GLUT_BITMAP_9_BY_15,printScreen[i]);
+	}
 	glPopMatrix();
 	orthogonalEnd();
 	
@@ -1042,14 +1076,17 @@ void idle(void)
 	sprintf(stampe,"Shoot Recharge |%s|",rech);
 	sprintf(stampe2,"Ammo |%i|",tanks[0].ammo);
 	sprintf(stampe3,"Speed |%i|",(int)fabs(tanks[0].speed));
-	float3 p = {tanks[0].pos[0], tanks[0].pos[1], tanks[0].pos[2]};
-	if (isColliding(p, &levelMap->obs[0][0].model->bb))
-	{
-		tanks[0].v[0] *= -0.0f;
-		tanks[0].v[2] *= 0.0f;
-		tanks[0].pos[2] = DIM_TILE * 0.5f;
+//	for (i=0; i<10; i++) {
+//		sprintf(printScreen[i], "|%f|\n|%f|\n|%f|\n|%f|", );
+//	}
+//	float3 p = {tanks[0].pos[0], tanks[0].pos[1], tanks[0].pos[2]};
+//	if (isColliding(p, &levelMap->obs[0][0].model->bb))
+//	{
+//		tanks[0].v[0] *= -0.0f;
+//		tanks[0].v[2] *= 0.0f;
+//		tanks[0].pos[2] = DIM_TILE * 0.5f;
 //		t->rot += cosf(radians(t->rot));
-	}
+//	}
 	
 //	printf("%f\t\t\t%f\t\t\t%f\n", tanks[0].rot, tanks[1].rot, tanks[2].rot);
 	glutPostRedisplay();

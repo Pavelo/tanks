@@ -154,8 +154,3 @@ void drawLevel(map* myMap)
 	glPopMatrix();
 }
 
-// le coordinate vanno specificate in un array di 8 vertici
-void placeBoundingBox(obstacle *o, float3 *vertices)
-{
-	
-}

@@ -5,7 +5,7 @@
 struct _obstacle
 {
 	obj* model;
-	float3 boundingVertices[8];
+	BoundingBox obsBB;
 };
 typedef struct _obstacle obstacle;
 
@@ -25,4 +25,3 @@ typedef struct _map map;
 
 map* loadLevel(char* path);
 void drawLevel(map* myMap);
-void placeBoundingBox(obstacle *o, float3 *vertices);

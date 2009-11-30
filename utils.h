@@ -13,5 +13,14 @@ struct _float3
 };
 typedef struct _float3 float3;
 
+struct _float4
+{
+	float x;
+	float y;
+	float z;
+	float w;
+};
+typedef struct _float4 float4;
+
 float dotProduct(float3 a, float3 b);
-float* matrixVecMult(float m[][4], float* v);
+float4 matrixVecMult(float *m, float4 v);

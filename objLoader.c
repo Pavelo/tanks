@@ -260,9 +260,12 @@ void drawOBJ(obj* model)
 	glEnd();
 	
 //	glPushMatrix();
-	glGetFloatv(GL_MODELVIEW_MATRIX, m);
-	glLoadIdentity();
-	glMultMatrixf(m);
+//	glGetFloatv(GL_MODELVIEW_MATRIX, m);
+//	float vector[4] = { 1.63460f , 2.0436f , 3.45f , 1.0f };
+//	float* res; 
+//	res = matrixVecMult(m, vector);
+//	printf("|%f|\n|%f|\n|%f|\n|%f|\n------------\n", res[0], res[1], res[2], res[3]);
+//	glMultMatrixf(m);
 	drawBoundingBox(&model->bb);
 //	glPopMatrix();
 	
