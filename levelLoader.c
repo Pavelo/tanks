@@ -129,7 +129,7 @@ void drawLevel(map* myMap)
 	
 	glPushMatrix();
 		glPushMatrix(); // disegno il muro
-			glScalef(myMap->width * DIM_TILE, 140.0f, myMap->depth * DIM_TILE);
+			glScalef(myMap->width * DIM_TILE, 155.0f, myMap->depth * DIM_TILE);
 			glEnable(GL_RESCALE_NORMAL);
 			drawOBJ(myMap->background[0]);
 		glPopMatrix();

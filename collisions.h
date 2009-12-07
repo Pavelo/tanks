@@ -8,4 +8,4 @@ struct _collisionMap
 };
 typedef struct _collisionMap collisionMap;
 
-//float3 placeBoundingBox(BoundingBox* b, float* tMatrix);
+BoundingBox* placeBoundingBox(BoundingBox* b, float* tMatrix);

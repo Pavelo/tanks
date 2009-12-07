@@ -1,17 +1,17 @@
 #include "collisions.h"
 
-//BoundingBox placeBoundingBox(BoundingBox* b, float* tMatrix)
-//{
-//	BoundingBox tb;
-//	float aMinVertex[3], aMaxVertex[3];
-//	
-//	aMinVertex[0] = b->min.x;
-//	aMinVertex[1] = b->min.y;
-//	aMinVertex[2] = b->min.z;
-//	aMaxVertex[0] = b->max.x;
-//	aMaxVertex[1] = b->max.y;
-//	aMaxVertex[2] = b->max.z;
-//	
-//	tb. = matrixVecMult(tMatrix, aMinVertex);
-//	maxVertex = matrixVecMult(tMatrix, aMaxVertex);
-//}
+BoundingBox tb;
+
+BoundingBox* placeBoundingBox(BoundingBox* b, float* tMatrix)
+{
+
+	float4 vMin = threeToFour(b->min);
+	float4 vMax = threeToFour(b->max);
+	
+	vMin = matrixVecMult(tMatrix, vMin);
+	vMax = matrixVecMult(tMatrix, vMax);
+	tb.min = fourToThree(vMin);
+	tb.max = fourToThree(vMax);
+	
+	return &tb;
+}

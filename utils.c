@@ -1,7 +1,5 @@
 #include "utils.h"
 
-//float4* vres;
-
 float dotProduct(float3 a, float3 b)
 {
 	return a.x * b.x + a.y * b.y + a.z * b.z;
@@ -20,4 +18,27 @@ float4 matrixVecMult(float *m, float4 v)
 	vres.w = m[3] * v.x + m[7] * v.y + m[11] * v.z + m[15] * v.w;
 	
 	return vres;
+}
+
+float4 threeToFour(float3 v)
+{
+	float4 v4;
+	
+	v4.x = v.x;
+	v4.y = v.y;
+	v4.z = v.z;
+	v4.w = 1.0f;
+	
+	return v4;
+}
+
+float3 fourToThree(float4 v)
+{
+	float3 v3;
+	
+	v3.x = v.x;
+	v3.y = v.y;
+	v3.z = v.z;
+	
+	return v3;
 }

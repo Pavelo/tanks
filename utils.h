@@ -24,3 +24,5 @@ typedef struct _float4 float4;
 
 float dotProduct(float3 a, float3 b);
 float4 matrixVecMult(float *m, float4 v);
+float4 threeToFour(float3 v);
+float3 fourToThree(float4 v);

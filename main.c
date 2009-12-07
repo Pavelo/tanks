@@ -119,7 +119,7 @@ char stampe[80];
 char stampe2[80];
 char stampe3 [80];
 char rech[10];
-char printScreen[10][80];
+char printScreen[20][80];
 float mat[16];
 float4 vec;
 float4 res;
@@ -669,6 +669,13 @@ void init(void)
     	tanks[i].userTreadR.pos[0] = 0.8f;
     	tanks[i].userTreadR.pos[1] = -0.06f;
     	tanks[i].userTreadR.pos[2] = 0.62f;
+		//bounding box in coordinate world
+		tanks[i].boundingVol.min.x = -2.0f;
+		tanks[i].boundingVol.min.y = 1.0f;
+		tanks[i].boundingVol.min.z = -5.0f;
+		tanks[i].boundingVol.max.x = 2.0f;
+		tanks[i].boundingVol.max.y = -1.0f;
+		tanks[i].boundingVol.max.z = 5.0f;
     }
 	
 	//carico i modelli del carro armato
@@ -826,36 +833,33 @@ void display(void)
     }//END FOR
 	
 	// diesegno il cielo
-//	glMatrixMode(GL_PROJECTION);
 	glPushMatrix();
 	glTranslatef(tanks[0].pos[0], tanks[0].pos[1], tanks[0].pos[2]);
 	glScalef(300.0f, 300.0f, 300.0f);
 	drawOBJ(levelMap->sky);
 	glPopMatrix();
-//	glMatrixMode(GL_MODELVIEW);
 	
-	// riposiziono la bounding box dei carri armati su di essi
+	// riposiziono la bounding box di ogni carro armato su di esso
 	i=0;
-//	for (i=0; i<nTanks; i++)
-//	{
+	int j;
+	for (i=0; i<nTanks; i++)
+	{
 		glPushMatrix();
 		glLoadIdentity();
 		glTranslatef(tanks[i].pos[0], tanks[i].pos[1], tanks[i].pos[2]);
 		glGetFloatv(GL_MODELVIEW_MATRIX, mat);
-		vec.x = 0.0f;
-		vec.y = 0.0f;
-		vec.z = 0.0f;
-		vec.w = 1.0f;
-		res = matrixVecMult(mat, vec);
-		for (i=0; i<4; i++)
+		BoundingBox* bbox;
+		bbox = (BoundingBox*) placeBoundingBox(&tanks[i].boundingVol, mat);
+		for (j=0; j<4; j++)
 		{
-			sprintf(printScreen[i], "|%f   %f   %f   %f|", mat[0*4+i], mat[1*4+i], mat[2*4+i], mat[3*4+i]);
+			sprintf(printScreen[j], "|%f   %f   %f   %f|", mat[0*4+j], mat[1*4+j], mat[2*4+j], mat[3*4+j]);
 		}
-		sprintf(printScreen[4], "");
-		sprintf(printScreen[5], "[%f   %f   %f   %f]", res.x, res.y, res.z, res.w);
+		sprintf(printScreen[4+i*3], "");
+		sprintf(printScreen[5+i*3], "[%f   %f   %f]", bbox->min.x, bbox->min.y, bbox->min.z);
+		sprintf(printScreen[6+i*3], "[%f   %f   %f]", bbox->max.x, bbox->max.y, bbox->max.z);
 		
 		glPopMatrix();
-//	}
+	}
 	
 	//sovraimpressioni ortogonali
 	orthogonalStart();
@@ -864,7 +868,7 @@ void display(void)
 	renderBitmapString(5.0f,30.0f,GLUT_BITMAP_9_BY_15,stampe);
 	renderBitmapString(5.0f,50.0f,GLUT_BITMAP_9_BY_15,stampe2);
 	renderBitmapString(5.0f,70.0f,GLUT_BITMAP_9_BY_15,stampe3);
-	for (i=0; i<6; i++) {
+	for (i=0; i<20; i++) {
 		renderBitmapString(5.0f,i*20+90.0f,GLUT_BITMAP_9_BY_15,printScreen[i]);
 	}
 	glPopMatrix();

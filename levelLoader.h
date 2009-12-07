@@ -5,6 +5,7 @@
 struct _obstacle
 {
 	obj* model;
+	int type;
 	BoundingBox obsBB;
 };
 typedef struct _obstacle obstacle;
