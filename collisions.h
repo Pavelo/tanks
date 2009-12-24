@@ -3,9 +3,11 @@
 struct _collisionMap
 {
 	BoundingBox obsBB[40][40];
-	BoundingBox tanksBB[3];
+	OrientedBoundingBox tanksBB[3];
+	BoundingBox border;
 	//	BoundingSphere bulletsBB[10]; // meglio mettere una bb nella struttura bullet?
 };
 typedef struct _collisionMap collisionMap;
 
-BoundingBox* placeBoundingBox(BoundingBox* b, float* tMatrix);
+BoundingBox placeBoundingBox(BoundingBox* b, float* tMatrix);
+OrientedBoundingBox placeOrientedBoundingBox(OrientedBoundingBox* ob, float* tMatrix);

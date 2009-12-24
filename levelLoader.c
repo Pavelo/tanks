@@ -17,27 +17,15 @@ map* loadLevel(char* path)
 	// Caricamento modelli
 	myMap->sky = (obj*) loadOBJ("obj/sky.obj");
 	myMap->background[0] = (obj*) loadOBJ("obj/des_wall.obj");
-	myMap->background[1] = (obj*) loadOBJ("obj/des_mountain.obj");
+	myMap->background[1] = (obj*) loadOBJ("obj/des_dunes.obj");
 	obs[0] = (obj*) loadOBJ("obj/des_ground.obj");
-	obs[1] = (obj*) loadOBJ("obj/pwup_ammo.obj");
+	obs[1] = (obj*) loadOBJ("obj/des_cactus.obj");
 	obs[2] = (obj*) loadOBJ("obj/des_trench_ns.obj");
 	obs[3] = (obj*) loadOBJ("obj/des_trench_we.obj");
 	obs[4] = (obj*) loadOBJ("obj/des_trench_end_n.obj");
 	obs[5] = (obj*) loadOBJ("obj/des_trench_end_s.obj");
 	obs[6] = (obj*) loadOBJ("obj/des_trench_end_w.obj");
 	obs[7] = (obj*) loadOBJ("obj/des_trench_end_e.obj");
-	
-	// Creo la bounding box di ogni modello
-	createBoundingBox(obs[0]);
-	createBoundingBox(obs[1]);
-	createBoundingBox(obs[2]);
-	createBoundingBox(obs[3]);
-	createBoundingBox(obs[4]);
-	createBoundingBox(obs[5]);
-	createBoundingBox(obs[6]);
-	createBoundingBox(obs[7]);
-	
-//	isColliding(obs[0].b.pivot, {1.0f, })
 	
 	FILE *fp = fopen(path,"r");
 	
@@ -97,7 +85,25 @@ map* loadLevel(char* path)
 		myMap->posX = -floor(myMap->width * 0.5f) * DIM_TILE + (1 - fmodf(myMap->width, 2)) * 0.5f * DIM_TILE;
 		myMap->posY = -floor(myMap->depth * 0.5f) * DIM_TILE + (1 - fmodf(myMap->depth, 2)) * 0.5f * DIM_TILE;
 		
-		// imposto le posizioni delle bounding box degli ostacoli statici
+		// Creo la bounding box di ogni modello
+		createBoundingBox(obs[0]);
+		createBoundingBox(obs[1]);
+		createBoundingBox(obs[2]);
+		createBoundingBox(obs[3]);
+		createBoundingBox(obs[4]);
+		createBoundingBox(obs[5]);
+		createBoundingBox(obs[6]);
+		createBoundingBox(obs[7]);
+		
+		// Creo le bounding box dei confini per delimitare la mappa
+		myMap->cm.border.min.x = -myMap->width * DIM_TILE * 0.5f;
+		myMap->cm.border.min.y = -100.0f;
+		myMap->cm.border.min.z = -myMap->depth * DIM_TILE * 0.5f;
+		myMap->cm.border.max.x = myMap->width * DIM_TILE * 0.5f;
+		myMap->cm.border.max.y = 100.0f;
+		myMap->cm.border.max.z = myMap->depth * DIM_TILE * 0.5f;
+		
+		// Imposto le posizioni delle bounding box degli ostacoli statici
 //		for (y=0; y < myMap->depth; y++)
 //		{
 //			for (x=0; x < myMap->width; x++)

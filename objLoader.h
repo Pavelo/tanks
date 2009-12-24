@@ -76,6 +76,12 @@ struct _BoundingBox
 };
 typedef struct _BoundingBox BoundingBox;
 
+struct _OrientedBoundingBox
+{
+	float3 vert[8];
+};
+typedef struct _OrientedBoundingBox OrientedBoundingBox;
+
 struct _obj
 {
 	Vertex v[50000];

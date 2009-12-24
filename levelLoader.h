@@ -1,4 +1,4 @@
-#include "objLoader.h"
+#include "collisions.h"
 
 #define DIM_TILE 5.0f
 
@@ -21,6 +21,7 @@ struct _map
 	obj* sky;
 	obj* background[2];
 	int loaded;
+	collisionMap cm;
 };
 typedef struct _map map;
 

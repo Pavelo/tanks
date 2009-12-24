@@ -330,8 +330,3 @@ void drawBoundingBox(BoundingBox *b)
     glEnd();
 	
 } 
-//void isColliding(float3 point, float3 normal)
-//{
-//	float re = fabsf( dotProduct(point, normal));
-//	printf("%f\n", re);
-//}

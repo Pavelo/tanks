@@ -20,7 +20,7 @@
 //COSTANTI
 #define WIDTH 800
 #define HEIGHT 600
-#define TANK_RAD 3.0f
+#define TANK_RAD 2.5f
 #define radians(degrees) degrees*M_PI/180.0f
 
 //STRUTTURE
@@ -70,6 +70,7 @@ struct _tank
 {
 	float scale; 
 	float pos[3];             //vettore per la posizione
+	float3 lastPos;
 	float v[3];               //vettore per la velocità
 	float a[3];               //vettore per l'accelerazione
 	float rot;                //valore in gradi per la rotazione
@@ -90,7 +91,7 @@ struct _tank
 	float rechargeNeeded;     //tempo richiesto per la ricarica
 	int state;                //stato: [0]-morto [1]-difendi [2]-temporeggia [3]-attacca
 	int animation;            //valore per l'animazione dei cingoli
-	BoundingBox boundingVol;  //bounding box che racchiude l'intero carro armato (coordinate world)
+	OrientedBoundingBox boundingVol;  //bounding box che racchiude l'intero carro armato (coordinate world)
 };
 typedef struct _tank tank;
 
@@ -119,48 +120,43 @@ char stampe[80];
 char stampe2[80];
 char stampe3 [80];
 char rech[10];
-char printScreen[20][80];
+char printScreen[30][80];
 float mat[16];
 float4 vec;
 float4 res;
 
-
 //FUNZIONI
 
 // Controlla se  avvenuta una collisione con i bordi della mappa
-void borderCollision(tank* t)
+void borderCollision(tank* t, int i)
 {
 	float dumping = 0.1f;
-	float halfScale = DIM_TILE * 0.5f;
+	float resp = 0.9995;
 	
-	if (t->pos[0] > levelMap->width * halfScale - TANK_RAD) // confine est
+	// controllo su 4 vertici
+	if (!isColliding(levelMap->cm.tanksBB[i].vert[0], &levelMap->cm.border) ||//-
+		!isColliding(levelMap->cm.tanksBB[i].vert[1], &levelMap->cm.border) ||//-
+		!isColliding(levelMap->cm.tanksBB[i].vert[2], &levelMap->cm.border) ||
+		!isColliding(levelMap->cm.tanksBB[i].vert[3], &levelMap->cm.border) ||
+		!isColliding(levelMap->cm.tanksBB[i].vert[4], &levelMap->cm.border) ||//-
+		!isColliding(levelMap->cm.tanksBB[i].vert[5], &levelMap->cm.border) ||//-
+		!isColliding(levelMap->cm.tanksBB[i].vert[6], &levelMap->cm.border) ||
+		!isColliding(levelMap->cm.tanksBB[i].vert[7], &levelMap->cm.border))
 	{
-		t->v[0] *= -dumping;
-		t->v[2] *= dumping;
-		t->pos[0] = levelMap->width * halfScale - TANK_RAD;
-		t->rot += cosf(radians(t->rot));
-	}
-	if (t->pos[0] < -levelMap->width * halfScale + TANK_RAD) // confine ovest
-	{
-		t->v[0] *= -dumping;
-		t->v[2] *= dumping;
-		t->pos[0] = -levelMap->width * halfScale + TANK_RAD;
-		t->rot -= cosf(radians(t->rot));
-	}
-	if (t->pos[2] > levelMap->depth * halfScale - TANK_RAD) // confine nord
-	{
+		t->pos[0] = t->lastPos.x * resp;
+		t->pos[2] = t->lastPos.z * resp;
+		
+		if (fabsf(t->lastPos.x) > fabsf(t->lastPos.z))
+			t->v[0] *= -1.0f;
+		else if (fabsf(t->lastPos.x) < fabsf(t->lastPos.z))
+			t->v[2] *= -1.0f;
+		
 		t->v[0] *= dumping;
-		t->v[2] *= -dumping;
-		t->pos[2] = levelMap->depth * halfScale - TANK_RAD;
-		t->rot -= sinf(radians(t->rot));
+		t->v[2] *= dumping;
 	}
-	if (t->pos[2] < -levelMap->depth * halfScale + TANK_RAD) // confine sud
-	{
-		t->v[0] *= dumping;
-		t->v[2] *= -dumping;
-		t->pos[2] = -levelMap->depth * halfScale + TANK_RAD;
-		t->rot += sinf(radians(t->rot));
-	}
+	
+	t->lastPos.x = t->pos[0];
+	t->lastPos.z = t->pos[2];
 }
 
 int isColliding(float3 p, BoundingBox* a)
@@ -314,7 +310,6 @@ void renderBitmapString(float x, float y, void *font, char *string)
     {
 		glutBitmapCharacter(font, *c);
     }
-	
 }
 
 
@@ -605,9 +600,22 @@ void init(void)
 	gettimeofday(&old, NULL);
 	srand(old.tv_sec);
 	
+	//carico i modelli del carro armato
+	objTank[0] = (obj*) loadOBJ("obj/tank_body.obj");
+	objTank[1] = (obj*) loadOBJ("obj/tread.obj");
+	objTank[2] = (obj*) loadOBJ("obj/tread2.obj");
+	objTank[3] = (obj*) loadOBJ("obj/tread3.obj");
+	objTank[4] = (obj*) loadOBJ("obj/tank_turret.obj");
+	objTank[5] = (obj*) loadOBJ("obj/tank_cannon.obj");
+	
+	//calcolo le bounding box delle parti principali del carro armato
+	createBoundingBox(objTank[0]);
+	createBoundingBox(objTank[4]);
+	createBoundingBox(objTank[5]);
+	
 	//definizione strutture
 	//carro armato
-	int i = 0;
+	int i, j;
 	for(i=0;i<nTanks;i++)
 	{
     	tanks[i].scale = 1.0f;
@@ -629,6 +637,9 @@ void init(void)
 					tanks[i].pos[1] = 1.0f;
 					tanks[i].pos[2] = -30.0f;
 				}
+		tanks[i].lastPos.x = 0.0f;
+		tanks[i].lastPos.y = 0.0f;
+		tanks[i].lastPos.z = 0.0f;
     	tanks[i].v[0] = 0.0f;
     	tanks[i].v[1] = 0.0f;
     	tanks[i].v[2] = 0.0f;
@@ -669,39 +680,46 @@ void init(void)
     	tanks[i].userTreadR.pos[0] = 0.8f;
     	tanks[i].userTreadR.pos[1] = -0.06f;
     	tanks[i].userTreadR.pos[2] = 0.62f;
+		//bounding box in coordinate locali
+		tanks[i].boundingVol.vert[0].x = objTank[0]->bb.min.x;
+		tanks[i].boundingVol.vert[0].y = objTank[0]->bb.min.y;
+		tanks[i].boundingVol.vert[0].z = objTank[0]->bb.min.z;
+		
+		tanks[i].boundingVol.vert[1].x = objTank[0]->bb.min.x;
+		tanks[i].boundingVol.vert[1].y = objTank[0]->bb.min.y;
+		tanks[i].boundingVol.vert[1].z = objTank[0]->bb.max.z;
+		
+		tanks[i].boundingVol.vert[2].x = objTank[0]->bb.min.x;
+		tanks[i].boundingVol.vert[2].y = objTank[0]->bb.max.y;
+		tanks[i].boundingVol.vert[2].z = objTank[0]->bb.min.z;
+		
+		tanks[i].boundingVol.vert[3].x = objTank[0]->bb.min.x;
+		tanks[i].boundingVol.vert[3].y = objTank[0]->bb.max.y;
+		tanks[i].boundingVol.vert[3].z = objTank[0]->bb.max.z;
+		
+		tanks[i].boundingVol.vert[4].x = objTank[0]->bb.max.x;
+		tanks[i].boundingVol.vert[4].y = objTank[0]->bb.min.y;
+		tanks[i].boundingVol.vert[4].z = objTank[0]->bb.min.z;
+		
+		tanks[i].boundingVol.vert[5].x = objTank[0]->bb.max.x;
+		tanks[i].boundingVol.vert[5].y = objTank[0]->bb.min.y;
+		tanks[i].boundingVol.vert[5].z = objTank[0]->bb.max.z;
+		
+		tanks[i].boundingVol.vert[6].x = objTank[0]->bb.max.x;
+		tanks[i].boundingVol.vert[6].y = objTank[0]->bb.max.y;
+		tanks[i].boundingVol.vert[6].z = objTank[0]->bb.min.z;
+		
+		tanks[i].boundingVol.vert[7].x = objTank[0]->bb.max.x;
+		tanks[i].boundingVol.vert[7].y = objTank[0]->bb.max.y;
+		tanks[i].boundingVol.vert[7].z = objTank[0]->bb.max.z;
 		//bounding box in coordinate world
-		tanks[i].boundingVol.min.x = -2.0f;
-		tanks[i].boundingVol.min.y = 1.0f;
-		tanks[i].boundingVol.min.z = -5.0f;
-		tanks[i].boundingVol.max.x = 2.0f;
-		tanks[i].boundingVol.max.y = -1.0f;
-		tanks[i].boundingVol.max.z = 5.0f;
+		for (j=0; j<8; j++)
+		{
+			levelMap->cm.tanksBB->vert[j].x = 0.0f;
+			levelMap->cm.tanksBB->vert[j].y = 0.0f;
+			levelMap->cm.tanksBB->vert[j].z = 0.0f;
+		}
     }
-	
-	//carico i modelli del carro armato
-	objTank[0] = (obj*) loadOBJ("obj/tank_body.obj");
-	objTank[1] = (obj*) loadOBJ("obj/tread.obj");
-	objTank[2] = (obj*) loadOBJ("obj/tread2.obj");
-	objTank[3] = (obj*) loadOBJ("obj/tread3.obj");
-	objTank[4] = (obj*) loadOBJ("obj/tank_turret.obj");
-	objTank[5] = (obj*) loadOBJ("obj/tank_cannon.obj");
-	
-	//calcolo le bounding box delle parti principali del carro armato
-	createBoundingBox(objTank[0]);
-	createBoundingBox(objTank[4]);
-	createBoundingBox(objTank[5]);
-	
-//	float matrix[4*4] =
-//	{
-//		1.0f , 0.0f , 0.0f , 0.0f ,
-//		0.0f , 1.0f , 0.0f , 0.0f ,
-//		0.0f , 0.0f , 1.0f , 0.0f ,
-//		0.0f , 0.0f , 0.0f , 1.0f 
-//	};
-//	float vector[4] = { 2.0f , 1.0f , 1.0f , 1.0f };
-//	float* res; 
-//	res = matrixVecMult(matrix, vector);
-//	printf("|%f|\n|%f|\n|%f|\n|%f|\n", res[0], res[1], res[2], res[3]);
 }
 
 //visualizzazione
@@ -808,6 +826,7 @@ void display(void)
 		}
 		glPopMatrix();
 		//tank body
+//		drawBoundingBox(&levelMap->cm.tanksBB[i]);
 		drawOBJ(objTank[0]);
     	glPopMatrix();
 		
@@ -839,28 +858,6 @@ void display(void)
 	drawOBJ(levelMap->sky);
 	glPopMatrix();
 	
-	// riposiziono la bounding box di ogni carro armato su di esso
-	i=0;
-	int j;
-	for (i=0; i<nTanks; i++)
-	{
-		glPushMatrix();
-		glLoadIdentity();
-		glTranslatef(tanks[i].pos[0], tanks[i].pos[1], tanks[i].pos[2]);
-		glGetFloatv(GL_MODELVIEW_MATRIX, mat);
-		BoundingBox* bbox;
-		bbox = (BoundingBox*) placeBoundingBox(&tanks[i].boundingVol, mat);
-		for (j=0; j<4; j++)
-		{
-			sprintf(printScreen[j], "|%f   %f   %f   %f|", mat[0*4+j], mat[1*4+j], mat[2*4+j], mat[3*4+j]);
-		}
-		sprintf(printScreen[4+i*3], "");
-		sprintf(printScreen[5+i*3], "[%f   %f   %f]", bbox->min.x, bbox->min.y, bbox->min.z);
-		sprintf(printScreen[6+i*3], "[%f   %f   %f]", bbox->max.x, bbox->max.y, bbox->max.z);
-		
-		glPopMatrix();
-	}
-	
 	//sovraimpressioni ortogonali
 	orthogonalStart();
 	glPushMatrix();
@@ -868,7 +865,7 @@ void display(void)
 	renderBitmapString(5.0f,30.0f,GLUT_BITMAP_9_BY_15,stampe);
 	renderBitmapString(5.0f,50.0f,GLUT_BITMAP_9_BY_15,stampe2);
 	renderBitmapString(5.0f,70.0f,GLUT_BITMAP_9_BY_15,stampe3);
-	for (i=0; i<20; i++) {
+	for (i=0; i<30; i++) {
 		renderBitmapString(5.0f,i*20+90.0f,GLUT_BITMAP_9_BY_15,printScreen[i]);
 	}
 	glPopMatrix();
@@ -1006,8 +1003,17 @@ void idle(void)
 		
     	tanks[i].enginePower = 0.0f;
         
-		// collisioni
-		borderCollision(&tanks[i]);
+		// COLLISIONI
+		// riposiziona la bounding box di ogni carro armato su di esso
+		glPushMatrix();
+		glLoadIdentity();
+		glTranslatef(tanks[i].pos[0], 0.5f, tanks[i].pos[2]);
+		glRotatef(tanks[i].rot, 0.0f, 1.0f, 0.0f);
+		glGetFloatv(GL_MODELVIEW_MATRIX, mat);
+		levelMap->cm.tanksBB[i] = placeOrientedBoundingBox(&tanks[i].boundingVol, mat);
+		glPopMatrix();
+		// gestistisce le collisioni con i confini della mappa
+		borderCollision(&tanks[i], i);
 		
 		if (tanks[i].rot > 180.0f)
 		{
@@ -1075,24 +1081,15 @@ void idle(void)
 			else
 				rech[(int)x]='-';
 		}
+//		sprintf(printScreen[4+i*3], "");
+//		sprintf(printScreen[5+i*3], "[%f %f %f]", levelMap->cm.tanksBB[i].min.x, levelMap->cm.tanksBB[i].min.y, levelMap->cm.tanksBB[i].min.z);
+//		sprintf(printScreen[6+i*3], "[%f %f %f]", levelMap->cm.tanksBB[i].max.x, levelMap->cm.tanksBB[i].max.y, levelMap->cm.tanksBB[i].max.z);
     }//END FOR
     
 	sprintf(stampe,"Shoot Recharge |%s|",rech);
 	sprintf(stampe2,"Ammo |%i|",tanks[0].ammo);
 	sprintf(stampe3,"Speed |%i|",(int)fabs(tanks[0].speed));
-//	for (i=0; i<10; i++) {
-//		sprintf(printScreen[i], "|%f|\n|%f|\n|%f|\n|%f|", );
-//	}
-//	float3 p = {tanks[0].pos[0], tanks[0].pos[1], tanks[0].pos[2]};
-//	if (isColliding(p, &levelMap->obs[0][0].model->bb))
-//	{
-//		tanks[0].v[0] *= -0.0f;
-//		tanks[0].v[2] *= 0.0f;
-//		tanks[0].pos[2] = DIM_TILE * 0.5f;
-//		t->rot += cosf(radians(t->rot));
-//	}
-	
-//	printf("%f\t\t\t%f\t\t\t%f\n", tanks[0].rot, tanks[1].rot, tanks[2].rot);
+
 	glutPostRedisplay();
 }
 
