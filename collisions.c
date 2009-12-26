@@ -31,3 +31,8 @@ OrientedBoundingBox placeOrientedBoundingBox(OrientedBoundingBox* ob, float* tMa
 	
 	return otb;
 }
+
+int isColliding(float3 p, BoundingBox* a)
+{
+	return p.x <= a->max.x && p.x >= a->min.x && p.y <= a->max.y && p.y >= a->min.y && p.z <= a->max.z && p.z >= a->min.z;
+}

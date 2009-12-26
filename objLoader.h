@@ -109,5 +109,5 @@ typedef struct _obj obj;
 obj* loadOBJ(char* path);
 void drawOBJ(obj* model);
 void createBoundingBox(obj* model);
+BoundingBox* BBUnion(BoundingBox *barr, int n);
 void drawBoundingBox(BoundingBox *b);
-//void isColliding(float3 point, float3 normal);

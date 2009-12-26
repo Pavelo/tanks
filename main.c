@@ -127,19 +127,15 @@ float4 res;
 
 //FUNZIONI
 
-// Controlla se  avvenuta una collisione con i bordi della mappa
+// Controlla se  avvenuta una collisione con i confini della mappa
 void borderCollision(tank* t, int i)
 {
 	float dumping = 0.1f;
 	float resp = 0.9995;
 	
 	// controllo su 4 vertici
-	if (!isColliding(levelMap->cm.tanksBB[i].vert[0], &levelMap->cm.border) ||//-
-		!isColliding(levelMap->cm.tanksBB[i].vert[1], &levelMap->cm.border) ||//-
-		!isColliding(levelMap->cm.tanksBB[i].vert[2], &levelMap->cm.border) ||
+	if (!isColliding(levelMap->cm.tanksBB[i].vert[2], &levelMap->cm.border) ||
 		!isColliding(levelMap->cm.tanksBB[i].vert[3], &levelMap->cm.border) ||
-		!isColliding(levelMap->cm.tanksBB[i].vert[4], &levelMap->cm.border) ||//-
-		!isColliding(levelMap->cm.tanksBB[i].vert[5], &levelMap->cm.border) ||//-
 		!isColliding(levelMap->cm.tanksBB[i].vert[6], &levelMap->cm.border) ||
 		!isColliding(levelMap->cm.tanksBB[i].vert[7], &levelMap->cm.border))
 	{
@@ -157,11 +153,6 @@ void borderCollision(tank* t, int i)
 	
 	t->lastPos.x = t->pos[0];
 	t->lastPos.z = t->pos[2];
-}
-
-int isColliding(float3 p, BoundingBox* a)
-{
-	return p.x <= a->max.x && p.x >= a->min.x && p.y <= a->max.y && p.y >= a->min.y && p.z <= a->max.z && p.z >= a->min.z;
 }
 
 //Crea l'illuminazione per il livello DESERTO
@@ -681,37 +672,39 @@ void init(void)
     	tanks[i].userTreadR.pos[1] = -0.06f;
     	tanks[i].userTreadR.pos[2] = 0.62f;
 		//bounding box in coordinate locali
-		tanks[i].boundingVol.vert[0].x = objTank[0]->bb.min.x;
-		tanks[i].boundingVol.vert[0].y = objTank[0]->bb.min.y;
-		tanks[i].boundingVol.vert[0].z = objTank[0]->bb.min.z;
+		BoundingBox bbarr[] = {objTank[0]->bb, objTank[4]->bb, objTank[5]->bb};
+		BoundingBox* tanksbb = BBUnion(bbarr, 3);
+		tanks[i].boundingVol.vert[0].x = tanksbb->min.x;
+		tanks[i].boundingVol.vert[0].y = tanksbb->min.y;
+		tanks[i].boundingVol.vert[0].z = tanksbb->min.z;
 		
-		tanks[i].boundingVol.vert[1].x = objTank[0]->bb.min.x;
-		tanks[i].boundingVol.vert[1].y = objTank[0]->bb.min.y;
-		tanks[i].boundingVol.vert[1].z = objTank[0]->bb.max.z;
+		tanks[i].boundingVol.vert[1].x = tanksbb->min.x;
+		tanks[i].boundingVol.vert[1].y = tanksbb->min.y;
+		tanks[i].boundingVol.vert[1].z = tanksbb->max.z;
 		
-		tanks[i].boundingVol.vert[2].x = objTank[0]->bb.min.x;
-		tanks[i].boundingVol.vert[2].y = objTank[0]->bb.max.y;
-		tanks[i].boundingVol.vert[2].z = objTank[0]->bb.min.z;
+		tanks[i].boundingVol.vert[2].x = tanksbb->min.x;
+		tanks[i].boundingVol.vert[2].y = tanksbb->max.y;
+		tanks[i].boundingVol.vert[2].z = tanksbb->min.z;
 		
-		tanks[i].boundingVol.vert[3].x = objTank[0]->bb.min.x;
-		tanks[i].boundingVol.vert[3].y = objTank[0]->bb.max.y;
-		tanks[i].boundingVol.vert[3].z = objTank[0]->bb.max.z;
+		tanks[i].boundingVol.vert[3].x = tanksbb->min.x;
+		tanks[i].boundingVol.vert[3].y = tanksbb->max.y;
+		tanks[i].boundingVol.vert[3].z = tanksbb->max.z;
 		
-		tanks[i].boundingVol.vert[4].x = objTank[0]->bb.max.x;
-		tanks[i].boundingVol.vert[4].y = objTank[0]->bb.min.y;
-		tanks[i].boundingVol.vert[4].z = objTank[0]->bb.min.z;
+		tanks[i].boundingVol.vert[4].x = tanksbb->max.x;
+		tanks[i].boundingVol.vert[4].y = tanksbb->min.y;
+		tanks[i].boundingVol.vert[4].z = tanksbb->min.z;
 		
-		tanks[i].boundingVol.vert[5].x = objTank[0]->bb.max.x;
-		tanks[i].boundingVol.vert[5].y = objTank[0]->bb.min.y;
-		tanks[i].boundingVol.vert[5].z = objTank[0]->bb.max.z;
+		tanks[i].boundingVol.vert[5].x = tanksbb->max.x;
+		tanks[i].boundingVol.vert[5].y = tanksbb->min.y;
+		tanks[i].boundingVol.vert[5].z = tanksbb->max.z;
 		
-		tanks[i].boundingVol.vert[6].x = objTank[0]->bb.max.x;
-		tanks[i].boundingVol.vert[6].y = objTank[0]->bb.max.y;
-		tanks[i].boundingVol.vert[6].z = objTank[0]->bb.min.z;
+		tanks[i].boundingVol.vert[6].x = tanksbb->max.x;
+		tanks[i].boundingVol.vert[6].y = tanksbb->max.y;
+		tanks[i].boundingVol.vert[6].z = tanksbb->min.z;
 		
-		tanks[i].boundingVol.vert[7].x = objTank[0]->bb.max.x;
-		tanks[i].boundingVol.vert[7].y = objTank[0]->bb.max.y;
-		tanks[i].boundingVol.vert[7].z = objTank[0]->bb.max.z;
+		tanks[i].boundingVol.vert[7].x = tanksbb->max.x;
+		tanks[i].boundingVol.vert[7].y = tanksbb->max.y;
+		tanks[i].boundingVol.vert[7].z = tanksbb->max.z;
 		//bounding box in coordinate world
 		for (j=0; j<8; j++)
 		{

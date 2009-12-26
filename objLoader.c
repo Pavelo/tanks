@@ -3,11 +3,13 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <math.h>
 #include "tga.h"
 #include "objLoader.h"
 
 int txtId = 0;
 float m[16];
+BoundingBox b;
 
 int loadMTL(char* path, obj* model)
 {
@@ -272,6 +274,30 @@ void drawOBJ(obj* model)
 	glDisable(GL_TEXTURE_2D);
 }
 
+// ritorna la bounding box che racchiude tutte le bb nell'array passato come argomento; n è il numero di elementi dell'array
+BoundingBox* BBUnion(BoundingBox *barr, int n)
+{
+	b.max.x = -10000.0f;
+	b.max.y = -10000.0f;
+	b.max.z = -10000.0f;
+	b.min.x = 10000.0f;
+	b.min.y = 10000.0f;
+	b.min.z = 10000.0f;
+	
+	while (n >= 0)
+	{
+		n--;
+		b.max.x = fmaxf(b.max.x, barr[n].max.x);
+		b.max.y = fmaxf(b.max.y, barr[n].max.y);
+		b.max.z = fmaxf(b.max.z, barr[n].max.z);
+		b.min.x = fminf(b.min.x, barr[n].min.x);
+		b.min.y = fminf(b.min.y, barr[n].min.y);
+		b.min.z = fminf(b.min.z, barr[n].min.z);
+	}
+	
+	return &b;
+}
+
 // crea una bounding box che rappresenta il volume in cui è inscritto il modello
 void createBoundingBox(obj* model)
 {
@@ -295,6 +321,8 @@ void createBoundingBox(obj* model)
 		if (model->v[i].z < model->bb.min.z) model->bb.min.z = model->v[i].z;
 	}
 }
+
+
 
 // rende visibile la bounding box associata al modello renderizzandola in wireframe
 void drawBoundingBox(BoundingBox *b)
