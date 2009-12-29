@@ -12,4 +12,3 @@ typedef struct _collisionMap collisionMap;
 BoundingBox placeBoundingBox(BoundingBox* b, float* tMatrix);
 OrientedBoundingBox placeOrientedBoundingBox(OrientedBoundingBox* ob, float* tMatrix);
 int isColliding(float3 p, BoundingBox* a);
-

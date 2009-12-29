@@ -93,6 +93,7 @@ struct _tank
 	int state;                //stato: [0]-morto [1]-difendi [2]-temporeggia [3]-attacca
 	int animation;            //valore per l'animazione dei cingoli
 	OrientedBoundingBox boundingVol;  //bounding box che racchiude l'intero carro armato (coordinate world)
+	float boundingRad;
 };
 typedef struct _tank tank;
 
@@ -153,6 +154,7 @@ void borderCollision(tank* t, int i)
 	}
 }
 
+// Controlla se  avvenuta una collisione con qualche ostacolo statico della mappa
 void staticCollision(tank* t, int i, int x, int y)
 {
 	float dumping = 0.2f;
@@ -171,6 +173,21 @@ void staticCollision(tank* t, int i, int x, int y)
 		t->rot = t->lastRot;
 		t->v[0] *= -dumping;
 		t->v[2] *= -dumping;
+	}
+}
+
+// Controlla se  avvenuta una collisione tra i carri armati
+void tanksCollision(tank* t1, tank* t2)
+{
+	float dumping = 0.2f;
+	
+	if ( sqrtf( (t2->pos[0] - t1->pos[0]) * (t2->pos[0] - t1->pos[0]) + (t2->pos[2] - t1->pos[2]) * (t2->pos[2] - t1->pos[2])) < (t1->boundingRad + t2->boundingRad) )
+	{
+		t1->pos[0] = t1->lastPos.x;
+		t1->pos[2] = t1->lastPos.z;
+		t1->v[0] *= -dumping;
+		t1->v[2] *= dumping;
+		
 	}
 }
 
@@ -732,6 +749,7 @@ void init(void)
 			levelMap->cm.tanksBB->vert[j].y = 0.0f;
 			levelMap->cm.tanksBB->vert[j].z = 0.0f;
 		}
+		tanks[i].boundingRad = 2.2f;
     }
 }
 
@@ -1042,6 +1060,12 @@ void idle(void)
 				staticCollision(&tanks[i], i, x, y);
 			}
 		}
+		// gestisce le collisioni tra i carri armati
+		for (x=0; x < levelMap->enemies; x++)
+			tanksCollision(&tanks[i], &tanks[(int)fmodf(i+x+1, levelMap->enemies+1)]);
+//		tanksCollision(&tanks[0], &tanks[1]);
+//		tanksCollision(&tanks[0], &tanks[2]);
+		
 		tanks[i].lastPos.x = tanks[i].pos[0];
 		tanks[i].lastPos.z = tanks[i].pos[2];
 		tanks[i].lastRot = tanks[i].rot;
