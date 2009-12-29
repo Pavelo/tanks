@@ -6,11 +6,12 @@
 
 map* loadLevel(char* path)
 {
-	int loaded, dim, i=0, x, y=0;
+	int loaded, dim, i, x, y=0;
 	char line[100];
 	obj* obs[20];
 	map* myMap;
-	float2 BBpos = {0.0f, 0.0f};
+	float3 BBpos = {0.0f, 0.0f, 0.0f};
+	float mat[16];
 	
 	myMap = (map*) malloc(sizeof(map));
 	
@@ -85,6 +86,14 @@ map* loadLevel(char* path)
 		myMap->posX = -floor(myMap->width * 0.5f) * DIM_TILE + (1 - fmodf(myMap->width, 2)) * 0.5f * DIM_TILE;
 		myMap->posY = -floor(myMap->depth * 0.5f) * DIM_TILE + (1 - fmodf(myMap->depth, 2)) * 0.5f * DIM_TILE;
 		
+		// Creo le bounding box dei confini per delimitare la mappa
+		myMap->cm.border.min.x = -myMap->width * DIM_TILE * 0.5f;
+		myMap->cm.border.min.y = -100.0f;
+		myMap->cm.border.min.z = -myMap->depth * DIM_TILE * 0.5f;
+		myMap->cm.border.max.x = myMap->width * DIM_TILE * 0.5f;
+		myMap->cm.border.max.y = 100.0f;
+		myMap->cm.border.max.z = myMap->depth * DIM_TILE * 0.5f;
+		
 		// Creo la bounding box di ogni modello
 		createBoundingBox(obs[0]);
 		createBoundingBox(obs[1]);
@@ -95,31 +104,28 @@ map* loadLevel(char* path)
 		createBoundingBox(obs[6]);
 		createBoundingBox(obs[7]);
 		
-		// Creo le bounding box dei confini per delimitare la mappa
-		myMap->cm.border.min.x = -myMap->width * DIM_TILE * 0.5f;
-		myMap->cm.border.min.y = -100.0f;
-		myMap->cm.border.min.z = -myMap->depth * DIM_TILE * 0.5f;
-		myMap->cm.border.max.x = myMap->width * DIM_TILE * 0.5f;
-		myMap->cm.border.max.y = 100.0f;
-		myMap->cm.border.max.z = myMap->depth * DIM_TILE * 0.5f;
+		for (i=2; i<8; i++)
+		{
+			obs[i]->bb.max.y = 0.05f;
+		}
 		
 		// Imposto le posizioni delle bounding box degli ostacoli statici
-//		for (y=0; y < myMap->depth; y++)
-//		{
-//			for (x=0; x < myMap->width; x++)
-//			{
-////				BBpos.x = x * DIM_TILE;
-////				BBpos.y = myMap->obs[x][y].model->bb
-////				BBpos.z = y * DIM_TILE;
-////				placeBoundingBox(&myMap->obs[x][y].model->bb, BBpos);
-//				myMap->obs[x][y].model->bb.min.x = myMap->posX * x - DIM_TILE * 0.5f;
-//				myMap->obs[x][y].model->bb.min.z = myMap->posY * y - DIM_TILE * 0.5f;
-//				myMap->obs[x][y].model->bb.max.x = myMap->posX * x + DIM_TILE * 0.5f;
-//				myMap->obs[x][y].model->bb.max.z = myMap->posY * y + DIM_TILE * 0.5f;
-//				printf("[%d][%d] min.x %f\t\tmin.z %f\t\tmax.x %f\t\tmax.z %f\n", x, y, myMap->obs[x][y].model->bb.min.x, myMap->obs[x][y].model->bb.min.z, myMap->obs[x][y].model->bb.max.x, myMap->obs[x][y].model->bb.max.z);
-//			}
-//		}
-		
+		glPushMatrix();
+		glLoadIdentity();
+		glTranslatef(myMap->posX, 0.0f, myMap->posY);
+		for (y=0; y < myMap->depth; y++)
+		{
+			for (x=0; x < myMap->width; x++)
+			{
+				glPushMatrix();
+				glTranslatef(x * DIM_TILE, 0.0f, y * DIM_TILE);
+				glScalef(DIM_TILE, DIM_TILE, DIM_TILE);
+				glGetFloatv(GL_MODELVIEW_MATRIX, mat);
+				myMap->cm.obsBB[x][y] = placeBoundingBox(&myMap->obs[x][y].model->bb, mat);
+				glPopMatrix();
+			}
+		}
+		glPopMatrix();
 		
 		myMap->loaded = 1;
 	}

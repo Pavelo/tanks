@@ -70,10 +70,11 @@ struct _tank
 {
 	float scale; 
 	float pos[3];             //vettore per la posizione
-	float3 lastPos;
+	float3 lastPos;           //vettore per la posizione all'istante di tempo precedente
 	float v[3];               //vettore per la velocità
 	float a[3];               //vettore per l'accelerazione
 	float rot;                //valore in gradi per la rotazione
+	float lastRot;            //valore in gradi per la rotazione all'istante di tempo precedente
 	tread userTreadL;         //struttura per il cingolo sinistro
 	tread userTreadR;         //struttura per il cingolo destro
 	turret userTurret;        //struttura per la torretta
@@ -130,8 +131,7 @@ float4 res;
 // Controlla se  avvenuta una collisione con i confini della mappa
 void borderCollision(tank* t, int i)
 {
-	float dumping = 0.1f;
-	float resp = 0.9995;
+	float dumping = 0.2f;
 	
 	// controllo su 4 vertici
 	if (!isColliding(levelMap->cm.tanksBB[i].vert[2], &levelMap->cm.border) ||
@@ -139,20 +139,39 @@ void borderCollision(tank* t, int i)
 		!isColliding(levelMap->cm.tanksBB[i].vert[6], &levelMap->cm.border) ||
 		!isColliding(levelMap->cm.tanksBB[i].vert[7], &levelMap->cm.border))
 	{
-		t->pos[0] = t->lastPos.x * resp;
-		t->pos[2] = t->lastPos.z * resp;
+		t->pos[0] = t->lastPos.x;
+		t->pos[2] = t->lastPos.z;
+		t->rot = t->lastRot;
 		
-		if (fabsf(t->lastPos.x) > fabsf(t->lastPos.z))
+		if (fabsf(t->pos[0]) > fabsf(t->pos[2]))
 			t->v[0] *= -1.0f;
-		else if (fabsf(t->lastPos.x) < fabsf(t->lastPos.z))
+		else
 			t->v[2] *= -1.0f;
 		
 		t->v[0] *= dumping;
 		t->v[2] *= dumping;
 	}
+}
+
+void staticCollision(tank* t, int i, int x, int y)
+{
+	float dumping = 0.2f;
 	
-	t->lastPos.x = t->pos[0];
-	t->lastPos.z = t->pos[2];
+	if (isColliding(levelMap->cm.tanksBB[i].vert[0], &levelMap->cm.obsBB[x][y]) ||
+		isColliding(levelMap->cm.tanksBB[i].vert[1], &levelMap->cm.obsBB[x][y]) ||
+		isColliding(levelMap->cm.tanksBB[i].vert[2], &levelMap->cm.obsBB[x][y]) ||
+		isColliding(levelMap->cm.tanksBB[i].vert[3], &levelMap->cm.obsBB[x][y]) ||
+		isColliding(levelMap->cm.tanksBB[i].vert[4], &levelMap->cm.obsBB[x][y]) ||
+		isColliding(levelMap->cm.tanksBB[i].vert[5], &levelMap->cm.obsBB[x][y]) ||
+		isColliding(levelMap->cm.tanksBB[i].vert[6], &levelMap->cm.obsBB[x][y]) ||
+		isColliding(levelMap->cm.tanksBB[i].vert[7], &levelMap->cm.obsBB[x][y]))
+	{
+		t->pos[0] = t->lastPos.x;
+		t->pos[2] = t->lastPos.z;
+		t->rot = t->lastRot;
+		t->v[0] *= -dumping;
+		t->v[2] *= -dumping;
+	}
 }
 
 //Crea l'illuminazione per il livello DESERTO
@@ -566,7 +585,7 @@ void reshape ( int w, int h)
 void init(void)
 {
 	//carico il livello
-	levelMap = loadLevel("levels/sample.lvl");
+	levelMap = loadLevel("levels/arena.lvl");
 	
 	setDesertLights();
 	
@@ -638,6 +657,7 @@ void init(void)
     	tanks[i].a[1] = 0.0f;
     	tanks[i].a[2] = 0.0f;
     	tanks[i].rot  = 0.0f;
+		tanks[i].lastRot = 0.0f;
     	tanks[i].speed = 0.0f;
     	tanks[i].enginePower = 0.0f;
     	tanks[i].frictionForce = 0.0f;
@@ -928,7 +948,7 @@ void keyboard(unsigned char key, int x, int y)
 
 void idle(void)
 {
-	int i = 0;
+	int i, x, y;
 	
 	struct timeval newTime;
 	
@@ -997,6 +1017,7 @@ void idle(void)
     	tanks[i].enginePower = 0.0f;
         
 		// COLLISIONI
+		
 		// riposiziona la bounding box di ogni carro armato su di esso
 		glPushMatrix();
 		glLoadIdentity();
@@ -1005,9 +1026,27 @@ void idle(void)
 		glGetFloatv(GL_MODELVIEW_MATRIX, mat);
 		levelMap->cm.tanksBB[i] = placeOrientedBoundingBox(&tanks[i].boundingVol, mat);
 		glPopMatrix();
+
+//		sprintf(printScreen[5], "%f", tanks[0].lastPos.z);
+//		sprintf(printScreen[6], "%f", tanks[0].pos[2]);
+//		sprintf(printScreen[7], "-");
+//		sprintf(printScreen[9], "%f | %f", tanks[0].v[0], tanks[0].v[2]);
+
 		// gestistisce le collisioni con i confini della mappa
 		borderCollision(&tanks[i], i);
+		// gestisce le collisioni con gli ostacoli statici
+		for (y=0; y < levelMap->depth; y++)
+		{
+			for (x=0; x < levelMap->width; x++)
+			{
+				staticCollision(&tanks[i], i, x, y);
+			}
+		}
+		tanks[i].lastPos.x = tanks[i].pos[0];
+		tanks[i].lastPos.z = tanks[i].pos[2];
+		tanks[i].lastRot = tanks[i].rot;
 		
+		// normalizzazione angoli
 		if (tanks[i].rot > 180.0f)
 		{
 			tanks[i].rot -= 360.0f;
