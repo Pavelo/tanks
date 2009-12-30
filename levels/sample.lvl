@@ -4,7 +4,7 @@
 # Questo è un commento
 
 # Numero di nemici
-e 4
+e 2
 
 # Rappresentazione della mappa. Ad ogni carattere corrisponde un elemento del livello (terreno oppure ostacolo)
 # Legenda:
