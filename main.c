@@ -20,7 +20,7 @@
 //COSTANTI
 #define WIDTH 800
 #define HEIGHT 600
-#define TANK_RAD 2.5f
+#define LIFETIME 0.3f
 #define radians(degrees) degrees*M_PI/180.0f
 
 //STRUTTURE
@@ -32,6 +32,7 @@ struct _bullet
 	float v[3];
 	float a[3];
 	float mass;
+	float3 scale;
 };
 typedef struct _bullet bullet;
 
@@ -39,6 +40,7 @@ typedef struct _bullet bullet;
 struct _bullets
 {
 	bullet bullet;
+	float lifetime;
 	struct _bullets *next;
 };
 typedef struct _bullets bullets;
@@ -93,7 +95,7 @@ struct _tank
 	int state;                //stato: [0]-morto [1]-difendi [2]-temporeggia [3]-attacca
 	int animation;            //valore per l'animazione dei cingoli
 	OrientedBoundingBox boundingVol;  //bounding box che racchiude l'intero carro armato (coordinate world)
-	float boundingRad;
+	float boundingRad;        //raggio della sfera che racchiude il carro armato
 };
 typedef struct _tank tank;
 
@@ -126,6 +128,7 @@ char printScreen[30][80];
 float mat[16];
 float4 vec;
 float4 res;
+float myColor[4] = { 1.0f, 1.0f, 1.0f, 1.0f };
 
 //FUNZIONI
 
@@ -189,6 +192,27 @@ void tanksCollision(tank* t1, tank* t2)
 		t1->v[2] *= dumping;
 		
 	}
+}
+
+// Controlla se è avvenuta una collisione tra un proiettile e un ostacolo
+int bulletObsCollision(float3 bulletPos)
+{
+	int collide = 0;
+	int x, y;
+	
+	for (y=0; y < levelMap->depth; y++)
+	{
+		for (x=0; x < levelMap->width; x++)
+		{
+			if (isColliding(bulletPos, &levelMap->cm.obsBB[x][y]))
+			{
+				collide = 1;
+				break;
+			}
+		}
+	}
+				
+	return collide;
 }
 
 //Crea l'illuminazione per il livello DESERTO
@@ -373,13 +397,18 @@ void shoot(tank *tankT)
 	b->bullet.a[1] = -9.8f;
 	b->bullet.a[2] = 0.0f;
 	b->bullet.mass = 1.0f;
+	b->bullet.scale.x = 1.0f;
+	b->bullet.scale.y = 1.0f;
+	b->bullet.scale.z = 1.0f;
 	b->bullet.pos[0] = tankT->pos[0] + (-0.83f + tankT->userTurret.pos[2] + tankT->userTurret.tankCannon.pos[2])* sin((tankT->rot+tankT->userTurret.rot)*M_PI/180.0f);
 	b->bullet.pos[1] = tankT->pos[1] + tankT->userTurret.pos[1] + tankT->userTurret.tankCannon.pos[1] + 2.2f*sin((tankT->userTurret.tankCannon.rot)*M_PI/180.0f);
 	b->bullet.pos[2] = tankT->pos[2] + (-0.83f + tankT->userTurret.pos[2] + tankT->userTurret.tankCannon.pos[2])* cos((tankT->rot+tankT->userTurret.rot)*M_PI/180.0f);
-	b->bullet.radius = 1.0f;
+	b->bullet.radius = 0.1f;
 	b->bullet.v[0] = 10.0f * sin((tankT->rot+tankT->userTurret.rot)*M_PI/180.0f) - tankT->v[0];
 	b->bullet.v[1] = 5.0f * sin((tankT->userTurret.tankCannon.rot)*M_PI/180.0f);
 	b->bullet.v[2] = 10.0f * cos((tankT->rot+tankT->userTurret.rot)*M_PI/180.0f) - tankT->v[2];
+	
+	b->lifetime = 0.0f;
 	
 	b->next = tankT->bulletRoot;
 	tankT->bulletRoot = b;
@@ -602,7 +631,7 @@ void reshape ( int w, int h)
 void init(void)
 {
 	//carico il livello
-	levelMap = loadLevel("levels/arena.lvl");
+	levelMap = loadLevel("levels/sample.lvl");
 	
 	setDesertLights();
 	
@@ -639,6 +668,8 @@ void init(void)
 	createBoundingBox(objTank[0]);
 	createBoundingBox(objTank[4]);
 	createBoundingBox(objTank[5]);
+	
+	objTank[5]->bb.min.z -= 1.7f;
 	
 	//definizione strutture
 	//carro armato
@@ -861,25 +892,36 @@ void display(void)
 		drawOBJ(objTank[0]);
     	glPopMatrix();
 		
+		glEnable(GL_BLEND);
+		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     	//float kkk = 0.0f;
     	for(p=tanks[i].bulletRoot; p!=NULL; p=p->next)
         {
             //proiettile
-            glPushMatrix();
-			glTranslatef(p->bullet.pos[0],p->bullet.pos[1],p->bullet.pos[2]);
-			glRotatef(tanks[i].userTurret.rot + tanks[i].rot,0.0f,1.0f,0.0f);
-			glRotatef(tanks[i].userTurret.tankCannon.rot,1.0f,0.0f,0.0f);
-			glTranslatef(0.0f,0.0f,-tanks[i].userTurret.tankCannon.length);
-			glutSolidSphere(0.1f, 10, 10);
-            glPopMatrix();
+			if (p->lifetime < LIFETIME)
+			{
+				myColor[3]=1.0-p->lifetime/LIFETIME;
+				glColor3fv(myColor);
+				glEnable(GL_RESCALE_NORMAL);
+				glPushMatrix();
+					glTranslatef(p->bullet.pos[0],p->bullet.pos[1],p->bullet.pos[2]);
+					glRotatef(tanks[i].userTurret.rot + tanks[i].rot,0.0f,1.0f,0.0f);
+					glRotatef(tanks[i].userTurret.tankCannon.rot,1.0f,0.0f,0.0f);
+					glTranslatef(0.0f,0.0f,-tanks[i].userTurret.tankCannon.length);
+					glScalef(p->bullet.scale.x, p->bullet.scale.y, p->bullet.scale.z);
+					glutSolidSphere(p->bullet.radius, 10, 10);
+				glPopMatrix();
+				glDisable(GL_RESCALE_NORMAL);
             /*glPushMatrix(); disegna sfere per controllare cancellazione da struttura corretta
 			 glTranslatef(2.0f*kkk,0.0f,0.0f);
 			 glutSolidSphere(1.2f, 20, 20);
 			 glPopMatrix();
 			 kkk += 1.0f;
 			 */
+			}
         }
         p=NULL;
+		glDisable(GL_BLEND);
     }//END FOR
 	
 	// diesegno il cielo
@@ -1063,8 +1105,6 @@ void idle(void)
 		// gestisce le collisioni tra i carri armati
 		for (x=0; x < levelMap->enemies; x++)
 			tanksCollision(&tanks[i], &tanks[(int)fmodf(i+x+1, levelMap->enemies+1)]);
-//		tanksCollision(&tanks[0], &tanks[1]);
-//		tanksCollision(&tanks[0], &tanks[2]);
 		
 		tanks[i].lastPos.x = tanks[i].pos[0];
 		tanks[i].lastPos.z = tanks[i].pos[2];
@@ -1086,6 +1126,12 @@ void idle(void)
     	//radice diventa primo nodo con Y positiva o NULL se non presente
     	while(tanks[i].bulletRoot!=NULL && tanks[i].bulletRoot->bullet.pos[1]<0.0f)
 			tanks[i].bulletRoot = tanks[i].bulletRoot->next;
+		
+		for(p=tanks[i].bulletRoot; p!=NULL; p=p->next)
+		{
+			p->lifetime += (float)deltaT;
+		}
+		
         //scorre tutta la struttura di pallottole
     	for(p=tanks[i].bulletRoot; p!=NULL; p=p->next)
     	{
@@ -1107,12 +1153,23 @@ void idle(void)
 						//sprintf(stampe,"COLPITO carrarmato %i ! Vita rimasta: %f",j,tanks[j].life);
 					}
                 }
-                p->bullet.pos[0] -= p->bullet.v[0]*deltaT;
-                p->bullet.v[0] += p->bullet.a[0]*deltaT;
-                p->bullet.pos[1] += p->bullet.v[1]*deltaT;
-                p->bullet.v[1] += p->bullet.a[1]*deltaT;
-                p->bullet.pos[2] -= p->bullet.v[2]*deltaT;
-                p->bullet.v[2] += p->bullet.a[2]*deltaT;
+				//gestione collisione proiettile-ostacolo
+				float3 bulletPos = { p->bullet.pos[0], p->bullet.pos[1], p->bullet.pos[2] };
+				if (bulletObsCollision(bulletPos))
+				{
+					p->bullet.scale.x += 5.0f;
+					p->bullet.scale.y += 0.5f;
+					p->bullet.scale.z += 5.0f;
+				}
+				else
+				{
+					p->bullet.pos[0] -= p->bullet.v[0]*deltaT;
+					p->bullet.v[0] += p->bullet.a[0]*deltaT;
+					p->bullet.pos[1] += p->bullet.v[1]*deltaT;
+					p->bullet.v[1] += p->bullet.a[1]*deltaT;
+					p->bullet.pos[2] -= p->bullet.v[2]*deltaT;
+					p->bullet.v[2] += p->bullet.a[2]*deltaT;
+				}
             }
         }
         
