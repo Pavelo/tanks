@@ -3,10 +3,12 @@
 
 # Questo è un commento
 
-# Numero di nemici
-e 2
+# Numero di nemici (massimo 9)
+e 3
 
 # Rappresentazione della mappa. Ad ogni carattere corrisponde un elemento del livello (terreno oppure ostacolo)
+# dimensione massima: 40 x 40
+#
 # Legenda:
 # o terreno
 # Y cactus
@@ -33,8 +35,8 @@ m oooooooYIooooooooooooooooooooo
 m ooooooooIoooooYooooooooooooooo
 m ooooooooIooooooooooooooooooooo
 m ooooooooIooYoooooooooooooooooo
-m ooooooooIooooooooooooooooooooo
 m oooooooouooooooooooooooooooooo
+m oooooooooooooooooooooooooooooo
 m oooooo(=================)ooooo
 m YooooooooooooooooooYoooooooooo
 m oooooooonooooooooooooooooooooo

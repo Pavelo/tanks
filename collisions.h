@@ -3,7 +3,7 @@
 struct _collisionMap
 {
 	BoundingBox obsBB[40][40];
-	OrientedBoundingBox tanksBB[3];
+	OrientedBoundingBox tanksBB[10];
 	BoundingBox border;
 	//	BoundingSphere bulletsBB[10]; // meglio mettere una bb nella struttura bullet?
 };

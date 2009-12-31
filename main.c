@@ -111,8 +111,7 @@ float ar;
 float blur = 0.2f;
 int blurActive = 0;
 //carri armati
-int nTanks = 3;
-tank tanks[3];
+tank* tanks;
 float frictionCoeff = 0.8f;
 float distanceFromCamera = 10.0f;
 int turretView = 0;
@@ -656,6 +655,8 @@ void init(void)
 	gettimeofday(&old, NULL);
 	srand(old.tv_sec);
 	
+	tanks = (tank*) malloc((levelMap->enemies+1) * sizeof(tank));
+	
 	//carico i modelli del carro armato
 	objTank[0] = (obj*) loadOBJ("obj/tank_body.obj");
 	objTank[1] = (obj*) loadOBJ("obj/tread.obj");
@@ -674,27 +675,21 @@ void init(void)
 	//definizione strutture
 	//carro armato
 	int i, j;
-	for(i=0;i<nTanks;i++)
+	for(i=0;i<levelMap->enemies+1;i++)
 	{
     	tanks[i].scale = 1.0f;
-    	if(i==0)
-    	{
+		
+		if (i==0) {
 			tanks[i].pos[0] = 0.0f;
 			tanks[i].pos[1] = 1.0f;
 			tanks[i].pos[2] = 0.0f;
-        } else
-			if(i==1)
-			{
-				tanks[i].pos[0] = 25.0f;
-				tanks[i].pos[1] = 1.0f;
-				tanks[i].pos[2] = 10.0f;
-			} else
-				if(i==2)
-				{
-					tanks[i].pos[0] = -12.0f;
-					tanks[i].pos[1] = 1.0f;
-					tanks[i].pos[2] = -30.0f;
-				}
+		}
+		else
+		{
+			tanks[i].pos[0] = i * 5;
+			tanks[i].pos[1] = 1.0f;
+			tanks[i].pos[2] = -levelMap->depth * DIM_TILE * 0.5f + 40;
+		}
 		tanks[i].lastPos.x = 0.0f;
 		tanks[i].lastPos.y = 0.0f;
 		tanks[i].lastPos.z = 0.0f;
@@ -704,7 +699,7 @@ void init(void)
     	tanks[i].a[0] = 0.0f;
     	tanks[i].a[1] = 0.0f;
     	tanks[i].a[2] = 0.0f;
-    	tanks[i].rot  = 0.0f;
+    	tanks[i].rot  = 180.0f * i;
 		tanks[i].lastRot = 0.0f;
     	tanks[i].speed = 0.0f;
     	tanks[i].enginePower = 0.0f;
@@ -837,7 +832,7 @@ void display(void)
 	
 	//CARRI ARMATI
     bullets *p = NULL;
-    for(i=0;i<nTanks;i++)
+    for(i=0;i<levelMap->enemies+1;i++)
     {
     	glPushMatrix();
 		glTranslatef(tanks[i].pos[0], tanks[i].pos[1], tanks[i].pos[2]);
@@ -1020,7 +1015,7 @@ void idle(void)
 	old.tv_sec = newTime.tv_sec;
 	old.tv_usec = newTime.tv_usec;
 	
-	for(i=0;i<nTanks;i++)
+	for(i=0;i<levelMap->enemies+1;i++)
     {
 		// normalizzazione degli angoli tra 0¡ e 360¡ per evitare overflow
 //		tanks[0].rot = fmodf(tanks[0].rot, 180.0f);
@@ -1140,7 +1135,7 @@ void idle(void)
                 p->next = p->next->next;
             //calcola la fisica delle pallottole
             int j = 0;
-            for(j=0;j<nTanks;j++)
+            for(j=0;j<levelMap->enemies+1;j++)
             {
 				
                 if(j!=i) 

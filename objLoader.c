@@ -261,7 +261,7 @@ void drawOBJ(obj* model)
 	
 	glEnd();
 	
-	drawBoundingBox(&model->bb);
+//	drawBoundingBox(&model->bb);
 	
 	glDisable(GL_TEXTURE_2D);
 }
