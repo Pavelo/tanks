@@ -190,6 +190,10 @@ void powerupCollision(tank* t, int i, int x, int y)
 			case 'p':
 				t->ammo += 5;
 				break;
+			case 'h':
+				t->life += 50.0f;
+				break;
+
 				
 			default:
 				break;
@@ -1222,6 +1226,7 @@ void idle(void)
 	sprintf(stampe,"Shoot Recharge |%s|",rech);
 	sprintf(stampe2,"Ammo |%i|",tanks[0].ammo);
 	sprintf(stampe3,"Speed |%i|",(int)fabs(tanks[0].speed));
+	sprintf(printScreen[0], "HP |%d|", (int)tanks[0].life);
 
 	glutPostRedisplay();
 }
