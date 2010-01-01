@@ -9,6 +9,7 @@ map* loadLevel(char* path)
 	int loaded, dim, i, x, y=0;
 	char line[100];
 	obj* obs[20];
+	obj* pwup[5];
 	map* myMap;
 	float3 BBpos = {0.0f, 0.0f, 0.0f};
 	float mat[16];
@@ -27,6 +28,7 @@ map* loadLevel(char* path)
 	obs[5] = (obj*) loadOBJ("obj/des_trench_end_s.obj");
 	obs[6] = (obj*) loadOBJ("obj/des_trench_end_w.obj");
 	obs[7] = (obj*) loadOBJ("obj/des_trench_end_e.obj");
+	pwup[0] = (obj*) loadOBJ("obj/pwup_ammo.obj");
 	
 	FILE *fp = fopen(path,"r");
 	
@@ -38,6 +40,7 @@ map* loadLevel(char* path)
 			if (line[0] == 'e')
 			{
 				sscanf(line, "%*c %d", &myMap->enemies);
+				myMap->enemies = fminf(myMap->enemies, 9);
 			}
 			// mappa
 			else if (line[0] == 'm')
@@ -45,7 +48,7 @@ map* loadLevel(char* path)
 				x=0;
 				while (line[x+2] != 10) {	// finch non trovo un a capo (LF)
 					switch (line[x+2]) {
-						case 'o':
+						case '.':
 							myMap->obs[x][y].model = obs[0];
 							break;
 						case 'Y':
@@ -69,7 +72,16 @@ map* loadLevel(char* path)
 						case ')':
 							myMap->obs[x][y].model = obs[7];
 							break;
+						case 'p':
+							myMap->obs[x][y].model = obs[0];
+							myMap->pwup[x][y].model = pwup[0];
+							myMap->pwup[x][y].type = line[x+2];
+							myMap->pwup[x][y].active = 1;
+							break;
+
 						default:
+							myMap->obs[x][y].model = obs[0];
+							myMap->pwup[x][y].active = 0;
 							break;
 					}
 					x++;
@@ -150,6 +162,7 @@ void drawLevel(map* myMap)
 			glEnable(GL_RESCALE_NORMAL);
 			drawOBJ(myMap->background[1]);
 		glPopMatrix();
+		// disegno il terreno, gli ostacoli e i powerup
 		glTranslatef(myMap->posX, 0.0f, myMap->posY);
 		for (y=0; y < myMap->depth; y++)
 		{
@@ -158,7 +171,13 @@ void drawLevel(map* myMap)
 				glPushMatrix();
 					glTranslatef(x * DIM_TILE, 0.0f, y * DIM_TILE);
 					glScalef(DIM_TILE, DIM_TILE, DIM_TILE);
-					drawOBJ(myMap->obs[x][y].model);
+					drawOBJ(myMap->obs[x][y].model); // disegno gli ostacoli o il terreno
+					if (myMap->pwup[x][y].model != NULL && myMap->pwup[x][y].active) // disegno i powerup
+					{
+						glRotatef(myMap->pwupRot, 0.0f, 1.0f, 0.0f);
+						glScalef(0.5f, 0.5f, 0.5f);
+						drawOBJ(myMap->pwup[x][y].model);
+					}
 				glPopMatrix();
 			}
 		}

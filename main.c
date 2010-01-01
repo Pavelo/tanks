@@ -178,6 +178,25 @@ void staticCollision(tank* t, int i, int x, int y)
 	}
 }
 
+// Controlla se  avvenuta una collisione con qualche powerup
+void powerupCollision(tank* t, int i, int x, int y)
+{
+	if ( (sqrtf( (t->pos[0] - x*DIM_TILE-levelMap->posX) * (t->pos[0] - x*DIM_TILE-levelMap->posX) + (t->pos[2] - y*DIM_TILE-levelMap->posY) * (t->pos[2] - y*DIM_TILE-levelMap->posY)) < (DIM_TILE*0.5f)) && levelMap->pwup[x][y].active && levelMap->pwup[x][y].model != NULL)
+	{
+		levelMap->pwup[x][y].active = 0;
+		levelMap->pwup[x][y].timer = PWUP_RESPAWN_TIME;
+		switch (levelMap->pwup[x][y].type)
+		{
+			case 'p':
+				t->ammo += 5;
+				break;
+				
+			default:
+				break;
+		}
+	}
+}
+
 // Controlla se  avvenuta una collisione tra i carri armati
 void tanksCollision(tank* t1, tank* t2)
 {
@@ -655,6 +674,8 @@ void init(void)
 	gettimeofday(&old, NULL);
 	srand(old.tv_sec);
 	
+	levelMap->pwupRot = 0.0f;
+	
 	tanks = (tank*) malloc((levelMap->enemies+1) * sizeof(tank));
 	
 	//carico i modelli del carro armato
@@ -1015,6 +1036,8 @@ void idle(void)
 	old.tv_sec = newTime.tv_sec;
 	old.tv_usec = newTime.tv_usec;
 	
+	levelMap->pwupRot = fmodf(levelMap->pwupRot, 360.0f) + 3.0f;
+	
 	for(i=0;i<levelMap->enemies+1;i++)
     {
 		// normalizzazione degli angoli tra 0¡ e 360¡ per evitare overflow
@@ -1082,19 +1105,21 @@ void idle(void)
 		levelMap->cm.tanksBB[i] = placeOrientedBoundingBox(&tanks[i].boundingVol, mat);
 		glPopMatrix();
 
-//		sprintf(printScreen[5], "%f", tanks[0].lastPos.z);
-//		sprintf(printScreen[6], "%f", tanks[0].pos[2]);
-//		sprintf(printScreen[7], "-");
-//		sprintf(printScreen[9], "%f | %f", tanks[0].v[0], tanks[0].v[2]);
-
 		// gestistisce le collisioni con i confini della mappa
 		borderCollision(&tanks[i], i);
-		// gestisce le collisioni con gli ostacoli statici
+		// gestisce le collisioni con gli ostacoli statici e i powerup
 		for (y=0; y < levelMap->depth; y++)
 		{
 			for (x=0; x < levelMap->width; x++)
 			{
 				staticCollision(&tanks[i], i, x, y);
+				powerupCollision(&tanks[i], i, x, y);
+				if (!levelMap->pwup[x][y].active && levelMap->pwup[x][y].model != NULL) {
+					levelMap->pwup[x][y].timer--;
+				}
+				if (levelMap->pwup[x][y].timer < 0 && levelMap->pwup[x][y].model != NULL) {
+					levelMap->pwup[x][y].active = 1;
+				}
 			}
 		}
 		// gestisce le collisioni tra i carri armati
