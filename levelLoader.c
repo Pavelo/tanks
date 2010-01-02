@@ -30,6 +30,7 @@ map* loadLevel(char* path)
 	obs[7] = (obj*) loadOBJ("obj/des_trench_end_e.obj");
 	pwup[0] = (obj*) loadOBJ("obj/pwup_ammo.obj");
 	pwup[1] = (obj*) loadOBJ("obj/pwup_health.obj");
+	pwup[2] = (obj*) loadOBJ("obj/pwup_quad_damage.obj");
 	
 	FILE *fp = fopen(path,"r");
 	
@@ -82,6 +83,12 @@ map* loadLevel(char* path)
 						case 'h':
 							myMap->obs[x][y].model = obs[0];
 							myMap->pwup[x][y].model = pwup[1];
+							myMap->pwup[x][y].type = line[x+2];
+							myMap->pwup[x][y].active = 1;
+							break;
+						case '4':
+							myMap->obs[x][y].model = obs[0];
+							myMap->pwup[x][y].model = pwup[2];
 							myMap->pwup[x][y].type = line[x+2];
 							myMap->pwup[x][y].active = 1;
 							break;

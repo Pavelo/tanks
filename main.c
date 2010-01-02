@@ -87,6 +87,7 @@ struct _tank
 	float mass;               //massa del carro armato
 	float iperBoostAccumul;
 	float iperBoost;
+	int weaponPower;          //potenza di attacco
 	bullets *bulletRoot;      //struttura per i proiettili
 	int ammo;                 //munizioni disponibili
 	float life;               //valore di vita
@@ -192,6 +193,9 @@ void powerupCollision(tank* t, int i, int x, int y)
 				break;
 			case 'h':
 				t->life += 50.0f;
+				break;
+			case '4':
+				t->weaponPower = 4;
 				break;
 
 				
@@ -733,6 +737,7 @@ void init(void)
     	tanks[i].mass = 1.0f;
     	tanks[i].iperBoostAccumul = 0.0f;
     	tanks[i].iperBoost = 0.0f;
+		tanks[i].weaponPower = 1;
     	tanks[i].bulletRoot = NULL;
     	tanks[i].ammo = 10;
     	tanks[i].life = 100.0f;
@@ -1123,6 +1128,10 @@ void idle(void)
 				}
 				if (levelMap->pwup[x][y].timer < 0 && levelMap->pwup[x][y].model != NULL) {
 					levelMap->pwup[x][y].active = 1;
+					if (levelMap->pwup[x][y].type == '4')
+					{
+						tanks[i].weaponPower = 1;
+					}
 				}
 			}
 		}
@@ -1173,7 +1182,7 @@ void idle(void)
 					{
 						p->bullet.v[0] *= -1.0f;
 						p->bullet.v[2] *= -1.0f;
-						tanks[j].life -= 10.0f;
+						tanks[j].life -= 10.0f * tanks[i].weaponPower;
 						//sprintf(stampe,"COLPITO carrarmato %i ! Vita rimasta: %f",j,tanks[j].life);
 					}
                 }
@@ -1218,9 +1227,11 @@ void idle(void)
 			else
 				rech[(int)x]='-';
 		}
-//		sprintf(printScreen[4+i*3], "");
-//		sprintf(printScreen[5+i*3], "[%f %f %f]", levelMap->cm.tanksBB[i].min.x, levelMap->cm.tanksBB[i].min.y, levelMap->cm.tanksBB[i].min.z);
-//		sprintf(printScreen[6+i*3], "[%f %f %f]", levelMap->cm.tanksBB[i].max.x, levelMap->cm.tanksBB[i].max.y, levelMap->cm.tanksBB[i].max.z);
+		
+		if (tanks[0].weaponPower == 4)
+			sprintf(printScreen[2], "4x QUAD-DAMAGE 4x");
+		else if (tanks[0].weaponPower == 1)
+			sprintf(printScreen[2], "");
     }//END FOR
     
 	sprintf(stampe,"Shoot Recharge |%s|",rech);
