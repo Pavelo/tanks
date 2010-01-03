@@ -182,7 +182,7 @@ void staticCollision(tank* t, int i, int x, int y)
 // Controlla se  avvenuta una collisione con qualche powerup
 void powerupCollision(tank* t, int i, int x, int y)
 {
-	if ( (sqrtf( (t->pos[0] - x*DIM_TILE-levelMap->posX) * (t->pos[0] - x*DIM_TILE-levelMap->posX) + (t->pos[2] - y*DIM_TILE-levelMap->posY) * (t->pos[2] - y*DIM_TILE-levelMap->posY)) < (DIM_TILE*0.5f)) && levelMap->pwup[x][y].active && levelMap->pwup[x][y].model != NULL)
+	if ( (sqrtf( (t->pos[0] - x*DIM_TILE-levelMap->posX) * (t->pos[0] - x*DIM_TILE-levelMap->posX) + (t->pos[2] - y*DIM_TILE-levelMap->posY) * (t->pos[2] - y*DIM_TILE-levelMap->posY)) < (DIM_TILE*0.5f)) && levelMap->pwup[x][y].active && levelMap->pwup[x][y].model != NULL )
 	{
 		levelMap->pwup[x][y].active = 0;
 		levelMap->pwup[x][y].timer = PWUP_RESPAWN_TIME;
@@ -657,7 +657,7 @@ void reshape ( int w, int h)
 void init(void)
 {
 	//carico il livello
-	levelMap = loadLevel("levels/sample.lvl");
+	levelMap = loadLevel("levels/arena.lvl");
 	
 	setDesertLights();
 	
@@ -1123,16 +1123,6 @@ void idle(void)
 			{
 				staticCollision(&tanks[i], i, x, y);
 				powerupCollision(&tanks[i], i, x, y);
-				if (!levelMap->pwup[x][y].active && levelMap->pwup[x][y].model != NULL) {
-					levelMap->pwup[x][y].timer--;
-				}
-				if (levelMap->pwup[x][y].timer < 0 && levelMap->pwup[x][y].model != NULL) {
-					levelMap->pwup[x][y].active = 1;
-					if (levelMap->pwup[x][y].type == '4')
-					{
-						tanks[i].weaponPower = 1;
-					}
-				}
 			}
 		}
 		// gestisce le collisioni tra i carri armati
@@ -1233,7 +1223,29 @@ void idle(void)
 		else if (tanks[0].weaponPower == 1)
 			sprintf(printScreen[2], "");
     }//END FOR
-    
+
+    // Timer powerup
+	for (y=0; y < levelMap->depth; y++)
+	{
+		for (x=0; x < levelMap->width; x++)
+		{
+			if (!levelMap->pwup[x][y].active && levelMap->pwup[x][y].model != NULL)
+			{
+				levelMap->pwup[x][y].timer--;
+				if (levelMap->pwup[x][y].timer < 0)
+				{
+					levelMap->pwup[x][y].active = 1;
+					if (levelMap->pwup[x][y].type == '4')
+					{
+						for (i=0; i<levelMap->enemies+1; i++) {
+							tanks[i].weaponPower = 1;
+						}
+					}
+				}
+			}
+		}
+	}
+	
 	sprintf(stampe,"Shoot Recharge |%s|",rech);
 	sprintf(stampe2,"Ammo |%i|",tanks[0].ammo);
 	sprintf(stampe3,"Speed |%i|",(int)fabs(tanks[0].speed));
