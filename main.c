@@ -22,6 +22,7 @@
 #define HEIGHT 600
 #define LIFETIME 0.3f
 #define radians(degrees) degrees*M_PI/180.0f
+#define degrees(radians) radians*180.0f/M_PI
 
 //STRUTTURE
 //struttura palla di cannone
@@ -94,7 +95,10 @@ struct _tank
 	float rechargeTime;       //tempo passato per la ricarica
 	float rechargeNeeded;     //tempo richiesto per la ricarica
 	int state;                //stato: [0]-morto [1]-difendi [2]-temporeggia [3]-attacca
-	int animation;            //valore per l'animazione dei cingoli
+	int animationL;            //valore per l'animazione dei cingoli
+	int animationR;            //valore per l'animazione dei cingoli
+	int collision;
+	float collisionAngle;
 	OrientedBoundingBox boundingVol;  //bounding box che racchiude l'intero carro armato (coordinate world)
 	float boundingRad;        //raggio della sfera che racchiude il carro armato
 };
@@ -125,10 +129,17 @@ char stampe2[80];
 char stampe3 [80];
 char rech[10];
 char printScreen[30][80];
+//matrici e vettori
 float mat[16];
 float4 vec;
 float4 res;
+//colori
 float myColor[4] = { 1.0f, 1.0f, 1.0f, 1.0f };
+//fisica proiettili
+float timePassed = 0.0f;
+//float kkk = 0.0f;
+float xBullet = 0.0f;
+float yBullet = 0.0f;
 
 //FUNZIONI
 
@@ -239,6 +250,101 @@ int bulletObsCollision(float3 bulletPos)
 	}
 				
 	return collide;
+}
+
+int checkCollision(tank* t,float angle) 
+{
+    int result = 0;
+    
+    int x;
+    int z;
+    
+    float distance = 20.0f;
+    
+    float3 tankPos;
+    tankPos.x = -t->pos[0];
+    tankPos.y = 0.0f;
+    tankPos.z = -t->pos[2];
+    
+    float3 tankToObstacle;
+    float3 tankToStraight;
+    float pf;
+    float3 p;
+    float3 b;
+    
+    glPushMatrix();
+    //glTranslatef(levelMap->posX, 0.0f, levelMap->posY);
+    //identifica tutti gli ostacoli presenti nella mappa
+    for (z=0; z < levelMap->depth; z++)
+		{
+			for (x=0; x < levelMap->width; x++) {
+                //se è un ostacolo
+                if(levelMap->obs[x][z].type==1)
+                {
+                    float xObs = x * DIM_TILE+levelMap->posX;
+                    float zObs = z * DIM_TILE+levelMap->posY;
+                    float radius = DIM_TILE*0.6f;
+                    tankToObstacle.x = xObs - t->pos[0];
+                    tankToObstacle.y = 0.0f;
+                    tankToObstacle.z = zObs - t->pos[2];
+                    tankToStraight.x = -distance*sin(radians(angle));
+                    tankToStraight.y = 0.0f;
+                    tankToStraight.z = -distance*cos(radians(angle));
+                    
+                    pf = dotProduct(normalize(tankToStraight),normalize(tankToObstacle));
+    	            pf = pf*magnitude(tankToObstacle);
+    	            p  = scalProduct(pf,normalize(tankToStraight));
+    	            b  = subtract(tankToObstacle,p);
+    	            
+    	            //verifica se c'è collisione
+    	            float check=dotProduct(p,tankToStraight); //per controllare il segno di p
+                    if(magnitude(p)<magnitude(tankToStraight) && check>=0.0f && magnitude(b)<radius)
+                    {
+                    result = 1;
+                    //sprintf(stampe2,"Collisione rilevataXY!");
+                    }
+    	            
+    	            //DISEGNO      
+    				glPushMatrix();
+    					glTranslatef(xObs, 0.0f, zObs);
+    					glutWireSphere(radius, 20, 20);	
+    				glPopMatrix();
+    				
+    				glPushMatrix();
+    				glBegin(GL_LINES);
+                    glNormal3f(0.0f,1.0f,0.0f);
+                	glVertex3f(xObs,0.2f,zObs);//FINE
+                	glVertex3f(t->pos[0],0.2f,t->pos[2]); //INIZIO
+                	glEnd();
+                	glPopMatrix();
+                	
+                	glPushMatrix();
+                	glBegin(GL_LINES);
+                    glNormal3f(0.0f,1.0f,0.0f);
+                	glVertex3f(-distance*sin(radians(angle)) + t->pos[0] ,0.2f,-distance*cos(radians(angle))+ t->pos[2]); //FINE
+                	glVertex3f(t->pos[0],0.2f,t->pos[2]); //INIZIO
+                	glEnd();
+                	glPopMatrix();
+                	
+                	glPushMatrix();
+                	glTranslatef(-distance*sin(radians(angle)) + t->pos[0], 0.0f, -distance*cos(radians(angle))+ t->pos[2]);
+                	glutSolidSphere(1.0f, 10, 10);
+                	glPopMatrix();
+                	glPushMatrix();
+                	glTranslatef(p.x + t->pos[0], 0.0f, p.z + t->pos[2]);
+                	glutSolidSphere(0.5f, 10, 10);
+                	glPopMatrix();
+                }//END IF
+			}//END FOR
+		}//END FOR
+    glPopMatrix();
+    
+    //if(result==1)
+    //sprintf(stampe2,"Collisione rilevataXY!");
+    //else
+    //sprintf(stampe2,"Via liberaXY!");
+    
+    return result;
 }
 
 //Crea l'illuminazione per il livello DESERTO
@@ -423,21 +529,49 @@ void shoot(tank *tankT)
 	b->bullet.a[1] = -9.8f;
 	b->bullet.a[2] = 0.0f;
 	b->bullet.mass = 1.0f;
-	b->bullet.scale.x = 1.0f;
-	b->bullet.scale.y = 1.0f;
-	b->bullet.scale.z = 1.0f;
 	b->bullet.pos[0] = tankT->pos[0] + (-0.83f + tankT->userTurret.pos[2] + tankT->userTurret.tankCannon.pos[2])* sin((tankT->rot+tankT->userTurret.rot)*M_PI/180.0f);
 	b->bullet.pos[1] = tankT->pos[1] + tankT->userTurret.pos[1] + tankT->userTurret.tankCannon.pos[1] + 2.2f*sin((tankT->userTurret.tankCannon.rot)*M_PI/180.0f);
 	b->bullet.pos[2] = tankT->pos[2] + (-0.83f + tankT->userTurret.pos[2] + tankT->userTurret.tankCannon.pos[2])* cos((tankT->rot+tankT->userTurret.rot)*M_PI/180.0f);
-	b->bullet.radius = 0.1f;
-	b->bullet.v[0] = 10.0f * sin((tankT->rot+tankT->userTurret.rot)*M_PI/180.0f) - tankT->v[0];
-	b->bullet.v[1] = 5.0f * sin((tankT->userTurret.tankCannon.rot)*M_PI/180.0f);
-	b->bullet.v[2] = 10.0f * cos((tankT->rot+tankT->userTurret.rot)*M_PI/180.0f) - tankT->v[2];
+	float translateB = (tankT->userTurret.tankCannon.pos[2] - tankT->userTurret.tankCannon.length);
+	b->bullet.pos[0] = translateB*sin((tankT->rot+tankT->userTurret.rot)*M_PI/180.0f);
+	b->bullet.pos[1] = 0.0f;
+	b->bullet.pos[2] = translateB*cos((tankT->rot+tankT->userTurret.rot)*M_PI/180.0f);
+	translateB = tankT->userTurret.tankCannon.length;
+	b->bullet.pos[0] = (-translateB*cos(tankT->userTurret.tankCannon.rot*M_PI/180.0f)-translateB*0.5f)*sin((tankT->rot+tankT->userTurret.rot)*M_PI/180.0f);
+	b->bullet.pos[1] = translateB*sin(tankT->userTurret.tankCannon.rot*M_PI/180.0f);
+	b->bullet.pos[2] = (-translateB*cos(tankT->userTurret.tankCannon.rot*M_PI/180.0f)-translateB*0.5f)*cos((tankT->rot+tankT->userTurret.rot)*M_PI/180.0f);
+	//*cos(tankT->userTurret.tankCannon.rot*M_PI/180.0f)
+	float cannonSpeed = 35.0f;
+    //la velocità di sparo viene separata in componente verticale e orizzontale rispetto alla rotazione del cannone
+    //a questo punto l'orizzonatale viene separata in componente X e Z rispetto alla rotazione del carro e torretta
+	b->bullet.v[0] = cannonSpeed*cos(radians(tankT->userTurret.tankCannon.rot))*sin(M_PI/180.0f*(tankT->rot+tankT->userTurret.rot));
+	b->bullet.v[1] = cannonSpeed*sin(radians(tankT->userTurret.tankCannon.rot));
+	b->bullet.v[2] = cannonSpeed*cos(radians(tankT->userTurret.tankCannon.rot))*cos(M_PI/180.0f*(tankT->rot+tankT->userTurret.rot));
 	
+	b->bullet.radius = 0.3f;
+	b->bullet.scale.x = 1.0f;
+	b->bullet.scale.y = 1.0f;
+	b->bullet.scale.z = 1.0f;
 	b->lifetime = 0.0f;
 	
 	b->next = tankT->bulletRoot;
 	tankT->bulletRoot = b;
+}
+
+void animateLeftTurn(tank *t)
+{
+    t->animationR+=3;
+	t->animationL-=3;
+	if(t->animationL<0)
+	    t->animationL=30;
+}
+
+void animateRightTurn(tank *t)
+{
+    t->animationL+=3;
+	t->animationR-=3;
+	if(t->animationR<0)
+		t->animationR=30;
 }
 
 //controlla se un angolo di rotazione è all'interno di un certo step
@@ -522,19 +656,14 @@ void attackEnemy(tank *tankT)
 	{
 		tankT->v[0] *= 0.90f;
 		tankT->v[2] *= 0.90f;
-		//bisognerebbe anche qui trattare la rotazione come movimento graduale
-		//e considerare tutti i casi di rotazione
 		float actualRotation = (tankT->userTurret.rot + tankT->rot);
-		if(actualRotation>180.0f)
-			actualRotation -= 360.0f;
-		if(actualRotation<-180.0f)
-			actualRotation += 360.0f;
+		actualRotation = normalize180(actualRotation);    
 		float stepR = 2.0f;
 		if(checkRotationInStep(angle,XSign,actualRotation,stepR)==1)
 		{
 			if(tankT->rechargeTime >= tankT->rechargeNeeded)
 			{
-				shoot(tankT);
+				//shoot(tankT);
 			}
 		}
 		else
@@ -548,41 +677,66 @@ void attackEnemy(tank *tankT)
 	//all'esterno della zona di raggio step ruota verso il nemico ed avvicinati
 	else 
 	{    
-		//se la rotazione è entro lo step di rotazione del nemico
-		float stepR = 2.0f;
-		if(checkRotationInStep(angle,XSign,tankT->rot,stepR)==1)
-		{
-			//accelera
-			tankT->enginePower = 100.0f*reduction;
-			//raddrizza torretta nel cammino
-			float TSign = 1.0f;
-			if(tankT->userTurret.rot<0.0f)
-				TSign = -1.0f;
-			if(fabs(tankT->userTurret.rot)>2.0f)
-				tankT->userTurret.rot += -1.5f * TSign;
-			
-		}
-		//altrimenti se la rotazione è al di fuori dello step di rotazione del nemico
-		else
-		{
-			//se sei in movimento fermati
-			if((tankT->speed<=-0.1f) || (tankT->speed>=0.1f))
-			{
-				tankT->v[0] *= 0.94f;
-				tankT->v[2] *= 0.94f;
+		//se non c'è collisione nella direzione verso cui dovrei ruotare
+		if(checkCollision(tankT,degrees(angle*XSign))==0)
+		{                                      
+			float stepR = 2.0f;
+			//se la rotazione è entro lo step di rotazione del nemico
+			if(checkRotationInStep(angle,XSign,tankT->rot,stepR)==1)
+			{         
+				//accelera
+				tankT->enginePower = 300.0f*reduction;
+				//raddrizza torretta nel cammino
+				float TSign = getSign(tankT->userTurret.rot);
+				if(fabs(tankT->userTurret.rot)>2.0f)
+					tankT->userTurret.rot += -1.5f * TSign;     
 			}
-			//se sei fermo ruota verso la nuova posizione
+			//altrimenti se la rotazione è al di fuori dello step di rotazione del nemico
 			else
 			{
-				tankT->rot = rotateTowards(angle,XSign,tankT->rot);
+				//se sei in movimento fermati
+				if((tankT->speed<=-0.1f) || (tankT->speed>=0.1f))
+				{
+					tankT->v[0] *= 0.94f;
+					tankT->v[2] *= 0.94f;
+				}
+				//se sei fermo ruota verso la nuova posizione
+				else
+				{
+					tankT->rot = rotateTowards(angle,XSign,tankT->rot);
+					animateLeftTurn(tankT);
+				}
+				//raddrizza torretta nel cammino
+				float TSign = getSign(tankT->userTurret.rot);
+				if(fabs(tankT->userTurret.rot)>2.0f)
+					tankT->userTurret.rot += -1.5f * TSign;
+				
 			}
-			//raddrizza torretta nel cammino
-			float TSign = 1.0f;
-			if(tankT->userTurret.rot<0.0f)
-				TSign = -1.0f;
-			if(fabs(tankT->userTurret.rot)>2.0f)
-				tankT->userTurret.rot += -1.5f * TSign;
-			
+		}
+		//se c'è collisione
+		else
+		{
+			//entra in modalità collision avoidance
+			tankT->collision = 10;
+			float stepC = 30.0f;
+			int i;
+			for(i=1;i<5;i++)
+			{
+				//se non c'è collisione all'angolo di collisione + 10*i
+				if(checkCollision(tankT,normalize180(degrees(angle*XSign)+stepC*i))==0)
+				{
+					tankT->collisionAngle = normalize180(degrees(angle*XSign)+stepC*i);
+					break;
+				}
+				//se non c'è collisione all'angolo di collisione - 10*i
+				/*
+				 else if(checkCollision(tankT,normalize180(degrees(angle*XSign)+stepC*(-i)))==0)
+				 {
+				 tankT->collisionAngle = normalize180(degrees(angle*XSign)+stepC*(-i));
+				 break;
+				 }
+				 */
+			}
 		}
 	}
 }
@@ -620,19 +774,85 @@ void runAway(tank *tankT)
 	}
 	
 	tankT->rot = (angle+M_PI)*180.0f/M_PI;
-	sprintf(stampe,"Lontananza: %f Velocità: %f",distance,tankT->speed);
+}
+
+void randomMove(tank *tankT)
+{
 }
 
 void planAction(tank *tankT)
 {
-	//controlla il nuovo stato
-	if(
-	   (tankT->life>50.0f && tankT->life<=70.0f && tankT->ammo>7) ||
-	   (tankT->life>70.0f && tankT->ammo>5)
-	   )
-		attackEnemy(tankT);
-	else
-		runAway(tankT);
+	//se non è stata rilevata una collisione
+	//PLAN ACTION
+	//se non hai abbastanza vita o munizioni
+	//scappa
+	//altrimenti se il nemico è in visuale
+	//attacca
+	//altrimenti
+	//movimento casuale
+	//se è stata rilevata collisione
+	//EVITA COLLISIONE
+	
+	float distanceX = (tankT->pos[0]-tanks[0].pos[0]);
+	float distanceZ = (tankT->pos[2]-tanks[0].pos[2]);
+	float distance = sqrt(distanceX*distanceX + distanceZ*distanceZ);
+	float XSign = 1.0f;
+	if(distanceX<0.0f)
+		XSign = -1.0f;
+	float TSign = 1.0f;
+	if(tankT->rot<0.0f)
+		TSign = -1.0f;
+	float angle = acos(distanceZ/distance);// * XSign;
+										   //se non è stata rilevata una collisione in precedenza
+	if(tankT->collision==0)
+	{
+        //se non hai abbastanza vita o munizioni
+        if
+			(
+			 (tankT->life<50.0f) ||
+			 (tankT->life>50.0f && tankT->life<=70.0f && tankT->ammo<7) ||
+			 (tankT->life>70.0f && tankT->ammo<3)
+			 )
+			//scappa
+			runAway(tankT);
+        //altrimenti se il nemico è in visuale
+    	else if
+			(
+    	     checkRotationInStep(angle,XSign,tankT->rot,30.0f)==1
+			 )
+			//attacca
+			attackEnemy(tankT);
+        //altrimenti
+    	else
+			//movimento casuale
+			randomMove(tankT);
+    }
+    //se in precedenza hai rilevato una collisione (modalità collision avoidance)
+    else
+    {
+        //sprintf(stampe2,"Collision avoidance pattern!");
+        //se sei in movimento fermati
+        int check = checkRotationInStep(fabs(radians(tankT->collisionAngle)),getSign(tankT->collisionAngle),tankT->rot,2.0f);
+        if(((tankT->speed<=-0.1f) || (tankT->speed>=0.1f)) && check==0)
+		{
+			tankT->v[0] *= 0.94f;
+			tankT->v[2] *= 0.94f;
+		}
+        else
+		{
+			if(check==1)
+			{
+				tankT->enginePower = 100.0f;
+				tankT->collision--;
+				sprintf(stampe2,"Collisione evitata!");
+			}
+			else 
+			{
+				tankT->rot = rotateTowards(fabs(radians(tankT->collisionAngle)),getSign(tankT->collisionAngle),tankT->rot);         
+				sprintf(stampe2,"Sto ruotando!");
+			}
+		}
+    }
 }
 
 //reshape
@@ -693,6 +913,7 @@ void init(void)
 	objTank[3] = (obj*) loadOBJ("obj/tread3.obj");
 	objTank[4] = (obj*) loadOBJ("obj/tank_turret.obj");
 	objTank[5] = (obj*) loadOBJ("obj/tank_cannon.obj");
+	objTank[6] = (obj*) loadOBJ("obj/crosshair.obj");
 	
 	//calcolo le bounding box delle parti principali del carro armato
 	createBoundingBox(objTank[0]);
@@ -734,7 +955,7 @@ void init(void)
     	tanks[i].enginePower = 0.0f;
     	tanks[i].frictionForce = 0.0f;
     	tanks[i].throttle = 0.0f;
-    	tanks[i].mass = 1.0f;
+    	tanks[i].mass = 3.0f;
     	tanks[i].iperBoostAccumul = 0.0f;
     	tanks[i].iperBoost = 0.0f;
 		tanks[i].weaponPower = 1;
@@ -742,19 +963,20 @@ void init(void)
     	tanks[i].ammo = 10;
     	tanks[i].life = 100.0f;
     	tanks[i].rechargeTime = 0.0f;
-    	tanks[i].rechargeNeeded = 3.0f;
+    	tanks[i].rechargeNeeded = 1.0f;
     	tanks[i].state = 2;
-    	tanks[i].animation = 0;
+    	tanks[i].animationL = 0;
+    	tanks[i].animationR = 0;
     	//torretta
     	tanks[i].userTurret.pos[0] = 0.0f;
     	tanks[i].userTurret.pos[1] = 0.72f;
     	tanks[i].userTurret.pos[2] = 0.0f;
     	tanks[i].userTurret.rot = 0.0f;
     	//cannone
-    	tanks[i].userTurret.tankCannon.length = 1.00f;
+    	tanks[i].userTurret.tankCannon.length = 2.20f;
     	tanks[i].userTurret.tankCannon.pos[0] = 0.0f;
-    	tanks[i].userTurret.tankCannon.pos[1] = -0.05f;
-    	tanks[i].userTurret.tankCannon.pos[2] = -2.2f;
+    	tanks[i].userTurret.tankCannon.pos[1] = -0.06f;
+		tanks[i].userTurret.tankCannon.pos[2] = -2.0f;
     	tanks[i].userTurret.tankCannon.rot = 0.0f;
     	//cingolo sx
     	tanks[i].userTreadL.pos[0] = -0.8f;
@@ -806,6 +1028,9 @@ void init(void)
 			levelMap->cm.tanksBB->vert[j].z = 0.0f;
 		}
 		tanks[i].boundingRad = 2.2f;
+    	
+    	tanks[i].collision = 0;
+    	tanks[i].collisionAngle = 0.0f;
     }
 }
 
@@ -884,36 +1109,36 @@ void display(void)
 		glPushMatrix();
 		glTranslatef(tanks[i].userTreadR.pos[0],tanks[i].userTreadR.pos[1],tanks[i].userTreadR.pos[2]);
 		glRotatef(90.0f,0.0f,1.0f,0.0f);
-		if(tanks[i].animation<10)
+		if(tanks[i].animationR<10)
 			drawOBJ(objTank[1]);
-		else if(tanks[i].animation<20)
+		else if(tanks[i].animationR<20)
 			drawOBJ(objTank[2]);
-		else if(tanks[i].animation<30)
+		else if(tanks[i].animationR<=30)
 			drawOBJ(objTank[3]);
 		else
 		{
 			drawOBJ(objTank[1]);
-			tanks[i].animation = 0;
+			tanks[i].animationR = 0;
 		}
 		glPopMatrix();
 		//left tread
 		glPushMatrix();
 		glTranslatef(tanks[i].userTreadL.pos[0],tanks[i].userTreadL.pos[1],tanks[i].userTreadL.pos[2]);
 		glRotatef(90.0f,0.0f,1.0f,0.0f);
-		if(tanks[i].animation<10)
+		if(tanks[i].animationL<10)
 			drawOBJ(objTank[1]);
-		else if(tanks[i].animation<20)
+		else if(tanks[i].animationL<20)
 			drawOBJ(objTank[2]);
-		else if(tanks[i].animation<30)
+		else if(tanks[i].animationL<=30)
 			drawOBJ(objTank[3]);
 		else
 		{
 			drawOBJ(objTank[1]);
-			tanks[i].animation = 0;
+			tanks[i].animationL = 0;
 		}
 		glPopMatrix();
 		//tank body
-//		drawBoundingBox(&levelMap->cm.tanksBB[i]);
+		//		drawBoundingBox(&levelMap->cm.tanksBB[i]);
 		drawOBJ(objTank[0]);
     	glPopMatrix();
 		
@@ -930,10 +1155,11 @@ void display(void)
 				glEnable(GL_RESCALE_NORMAL);
 				glPushMatrix();
 					glTranslatef(p->bullet.pos[0],p->bullet.pos[1],p->bullet.pos[2]);
-					glRotatef(tanks[i].userTurret.rot + tanks[i].rot,0.0f,1.0f,0.0f);
-					glRotatef(tanks[i].userTurret.tankCannon.rot,1.0f,0.0f,0.0f);
-					glTranslatef(0.0f,0.0f,-tanks[i].userTurret.tankCannon.length);
-					glScalef(p->bullet.scale.x, p->bullet.scale.y, p->bullet.scale.z);
+					glTranslatef(tanks[i].pos[0],tanks[i].pos[1]+tanks[i].userTurret.pos[1],tanks[i].pos[2]);
+//					glRotatef(tanks[i].userTurret.rot + tanks[i].rot,0.0f,1.0f,0.0f);
+//					glRotatef(tanks[i].userTurret.tankCannon.rot,1.0f,0.0f,0.0f);
+//					glTranslatef(0.0f,0.0f,-tanks[i].userTurret.tankCannon.length);
+//					glScalef(p->bullet.scale.x, p->bullet.scale.y, p->bullet.scale.z);
 					glutSolidSphere(p->bullet.radius, 10, 10);
 				glPopMatrix();
 				glDisable(GL_RESCALE_NORMAL);
@@ -969,6 +1195,30 @@ void display(void)
 	glPopMatrix();
 	orthogonalEnd();
 	
+	//disegno ostacolone
+	glPushMatrix();
+	glTranslatef(20.0f, 0.0f, 20.0f);
+	//glutWireSphere(5.0f, 10, 10);
+	glPopMatrix();
+	
+	//disegno mirino
+	if(turretView==1)
+	{
+		glEnable(GL_RESCALE_NORMAL);
+    	float translateB = (tanks[0].userTurret.tankCannon.pos[2] - tanks[0].userTurret.tankCannon.length);
+    	float initX = translateB*sin((tanks[0].rot+tanks[0].userTurret.rot)*M_PI/180.0f);
+    	float initY = translateB*cos((tanks[0].rot+tanks[0].userTurret.rot)*M_PI/180.0f);
+    	glPushMatrix();
+		lightOff();
+		glColor3f(1.0f, 0.0f, 0.0f);
+    	glTranslatef(xBullet+ tanks[0].pos[0]  + initX, 0.3f, yBullet+ tanks[0].pos[2] + initY);
+    	glRotatef(tanks[0].rot+tanks[0].userTurret.rot,0.0f,1.0f,0.0f);
+    	drawOBJ(objTank[6]);
+		lightOn();
+    	glPopMatrix();
+    }
+	
+	//checkCollision(&tanks[0],tanks[0].rot);
 	
 	glutSwapBuffers();
 }
@@ -982,21 +1232,23 @@ void keyboard(unsigned char key, int x, int y)
 			exit(0);
 			break;
 		case 'w': //forward
-			tanks[0].enginePower = 100.0f;
+			tanks[0].enginePower = 300.0f;
 			break;
 		case 's': //back
-			tanks[0].enginePower = -100.0f;
+			tanks[0].enginePower = -300.0f;
 			break;
 		case 'a': //left
 			if(tanks[0].v[2]==0.0f)
 			{
 				tanks[0].rot += 1.5f;
+				animateLeftTurn(&tanks[0]);
 			}
 			break;
 		case 'd': //right
 			if(tanks[0].v[2]==0.0f)
 			{
 				tanks[0].rot -= 1.5f;
+				animateRightTurn(&tanks[0]);
 			}
 			break;
 		case 't': //enable/disable turret view
@@ -1045,7 +1297,7 @@ void idle(void)
 	old.tv_sec = newTime.tv_sec;
 	old.tv_usec = newTime.tv_usec;
 	
-	levelMap->pwupRot = fmodf(levelMap->pwupRot, 360.0f) + 3.0f;
+	levelMap->pwupRot = fmodf(levelMap->pwupRot + 3.0f, 360.0f);
 	
 	for(i=0;i<levelMap->enemies+1;i++)
     {
@@ -1097,9 +1349,9 @@ void idle(void)
     	// S = So + vo*t + a*t*t*0.5
     	//calcolo delle equazioni del moto
     	tanks[i].pos[0] += tanks[i].v[0]*deltaT + tanks[i].a[0]*deltaT*deltaT*0.5f;
-    	tanks[i].v[0] += tanks[i].a[0] * deltaT;
+    	tanks[i].v[0] += tanks[i].a[0] * deltaT; //velocità finale
     	tanks[i].pos[2] += tanks[i].v[2]*deltaT + tanks[i].a[2]*deltaT*deltaT*0.5f;
-    	tanks[i].v[2] += tanks[i].a[2] * deltaT;
+    	tanks[i].v[2] += tanks[i].a[2] * deltaT; //velocità finale
 		
     	tanks[i].enginePower = 0.0f;
         
@@ -1134,32 +1386,29 @@ void idle(void)
 		tanks[i].lastRot = tanks[i].rot;
 		
 		// normalizzazione angoli
-		if (tanks[i].rot > 180.0f)
-		{
-			tanks[i].rot -= 360.0f;
-		}
-		else if (tanks[i].rot < -180.0f)
-		{
-			tanks[i].rot += 360.0f;
-		}
+//		if (tanks[i].rot > 180.0f)
+//		{
+//			tanks[i].rot -= 360.0f;
+//		}
+//		else if (tanks[i].rot < -180.0f)
+//		{
+//			tanks[i].rot += 360.0f;
+//		}
 		
+            
     	//FISICA PALLOTTOLE
     	bullets *p;
     	//elimina dalla struttura la radice con posizione Y negativa
     	//radice diventa primo nodo con Y positiva o NULL se non presente
-    	while(tanks[i].bulletRoot!=NULL && tanks[i].bulletRoot->bullet.pos[1]<0.0f)
+    	float bulletY = 0.0f;
+    	while(tanks[i].bulletRoot!=NULL && tanks[i].bulletRoot->bullet.pos[1] + tanks[i].pos[1] + tanks[i].userTurret.pos[1]<0.0f)
 			tanks[i].bulletRoot = tanks[i].bulletRoot->next;
-		
-		for(p=tanks[i].bulletRoot; p!=NULL; p=p->next)
-		{
-			p->lifetime += (float)deltaT;
-		}
-		
         //scorre tutta la struttura di pallottole
     	for(p=tanks[i].bulletRoot; p!=NULL; p=p->next)
     	{
+            //bulletY = p->next->bullet.pos[1] + tanks[i].pos[1] + tanks[i].userTurret.pos[1];
             //toglie dalla struttura le pallottole con Y negativa
-            while(p->next!=NULL && p->next->bullet.pos[1]<0.0f)
+            while(p->next!=NULL && (p->next->bullet.pos[1]+tanks[i].pos[1]+tanks[i].userTurret.pos[1])<0.0f)
                 p->next = p->next->next;
             //calcola la fisica delle pallottole
             int j = 0;
@@ -1170,60 +1419,80 @@ void idle(void)
                 {
 					if(p->bullet.pos[0]>tanks[j].pos[0]-1.0f && p->bullet.pos[0]<tanks[j].pos[0]+1.0f && p->bullet.pos[2]>tanks[j].pos[2]-1.0f && p->bullet.pos[2]<tanks[j].pos[2]+1.0f)
 					{
-						p->bullet.v[0] *= -1.0f;
-						p->bullet.v[2] *= -1.0f;
-						tanks[j].life -= 10.0f * tanks[i].weaponPower;
+						//p->bullet.v[0] *= -1.0f;
+						//p->bullet.v[2] *= -1.0f;
+						tanks[j].life -= 10.0f;
 						//sprintf(stampe,"COLPITO carrarmato %i ! Vita rimasta: %f",j,tanks[j].life);
 					}
                 }
-				//gestione collisione proiettile-ostacolo
-				float3 bulletPos = { p->bullet.pos[0], p->bullet.pos[1], p->bullet.pos[2] };
-				if (bulletObsCollision(bulletPos))
-				{
-					p->bullet.scale.x += 5.0f;
-					p->bullet.scale.y += 0.5f;
-					p->bullet.scale.z += 5.0f;
-				}
-				else
-				{
-					p->bullet.pos[0] -= p->bullet.v[0]*deltaT;
-					p->bullet.v[0] += p->bullet.a[0]*deltaT;
-					p->bullet.pos[1] += p->bullet.v[1]*deltaT;
-					p->bullet.v[1] += p->bullet.a[1]*deltaT;
-					p->bullet.pos[2] -= p->bullet.v[2]*deltaT;
-					p->bullet.v[2] += p->bullet.a[2]*deltaT;
-				}
             }
+            
+			float3 bulletPos = { p->bullet.pos[0], p->bullet.pos[1], p->bullet.pos[2] };
+			if (bulletObsCollision(bulletPos))
+			{
+				p->bullet.scale.x += 5.0f;
+				p->bullet.scale.y += 0.5f;
+				p->bullet.scale.z += 5.0f;
+			}
+			else
+			{
+				p->bullet.pos[0] -= p->bullet.v[0]*deltaT;
+            //p->bullet.v[0] += p->bullet.a[0]*deltaT;
+            //p->bullet.pos[1] += p->bullet.v[1]*deltaT;
+            p->bullet.pos[1] += p->bullet.v[1]*deltaT + 0.5*p->bullet.a[1]*deltaT*deltaT;
+            p->bullet.v[1] += p->bullet.a[1]*deltaT;
+            p->bullet.pos[2] -= p->bullet.v[2]*deltaT;
+            //p->bullet.v[2] += p->bullet.a[2]*deltaT;
+            }
+            
         }
-        
+            
         //tempo di ricarica per le pallottole
-        if(tanks[i].rechargeTime<tanks[i].rechargeNeeded)
+        if(tanks[i].rechargeTime<tanks[i].rechargeNeeded && tanks[i].ammo>0)
             tanks[i].rechargeTime += deltaT;
 		
     	//settings per le animazioni dei cingoli
-    	if(fabs(tanks[i].speed)<6.0f)
-            tanks[i].animation += 1*fabs(tanks[i].speed)*0.5;
+    	if(fabs(tanks[i].speed)<6.0f) 
+        {
+            tanks[i].animationL += 1*fabs(tanks[i].speed)*0.5;
+            tanks[i].animationR += 1*fabs(tanks[i].speed)*0.5;
+        }
     	else
-    	    tanks[i].animation += 3;
-		
-		int x;
-		float y = tanks[0].rechargeNeeded*0.1f;
-		float y2 = 0.0f;
-		for(x=0;x<10;x++)
-		{
-			y2 += y;
-			if(y2<=tanks[0].rechargeTime)
-				rech[(int)x]='O';
-			else
-				rech[(int)x]='-';
-		}
-		
-		if (tanks[0].weaponPower == 4)
-			sprintf(printScreen[2], "4x QUAD-DAMAGE 4x");
-		else if (tanks[0].weaponPower == 1)
-			sprintf(printScreen[2], "");
+    	{
+    	    tanks[i].animationL += 3;
+    	    tanks[i].animationR += 3;
+        }
     }//END FOR
+	
+	//ricarica
+//	int x;
+	float yf = tanks[0].rechargeNeeded*0.1f;
+	float yf2 = 0.0f;
+	for(x=0;x<10;x++)
+	{
+		yf2 += yf;
+		if(yf2<=tanks[0].rechargeTime)
+			rech[(int)x]='O';
+		else
+			rech[(int)x]='-';
+	}
+	
+	
+    //mirino
+    if(turretView==1)
+    {
+        float cannonSpeed = 35.0f;
+        float initialHigh = tanks[0].pos[1]+tanks[0].userTurret.pos[1];
+        initialHigh += tanks[0].userTurret.tankCannon.length*sin(tanks[0].userTurret.tankCannon.rot*M_PI/180.0f);;
+        float initialVel0 = cannonSpeed*cos(radians(tanks[0].userTurret.tankCannon.rot))*sin(M_PI/180.0f*(tanks[0].rot+tanks[0].userTurret.rot));
+        float initialVel1 = cannonSpeed*sin(radians(tanks[0].userTurret.tankCannon.rot));
+        float initialVel2 = cannonSpeed*cos(radians(tanks[0].userTurret.tankCannon.rot))*cos(M_PI/180.0f*(tanks[0].rot+tanks[0].userTurret.rot));
+        float timeAtFloor = (-initialVel1 - sqrt(initialVel1*initialVel1 + 2.0f*9.81*initialHigh))/-9.81f;
+        xBullet=-initialVel0*timeAtFloor;
+        yBullet=-initialVel2*timeAtFloor;
+    }
 
+	
     // Timer powerup
 	for (y=0; y < levelMap->depth; y++)
 	{
@@ -1246,8 +1515,15 @@ void idle(void)
 		}
 	}
 	
+	//HUD
+	if (tanks[0].weaponPower == 4)
+		sprintf(printScreen[2], "4x QUAD-DAMAGE 4x");
+	else if (tanks[0].weaponPower == 1)
+		sprintf(printScreen[2], "");
+	
 	sprintf(stampe,"Shoot Recharge |%s|",rech);
 	sprintf(stampe2,"Ammo |%i|",tanks[0].ammo);
+//    sprintf(stampe2,"Animation |%i|",tanks[0].animationL);
 	sprintf(stampe3,"Speed |%i|",(int)fabs(tanks[0].speed));
 	sprintf(printScreen[0], "HP |%d|", (int)tanks[0].life);
 

@@ -42,3 +42,51 @@ float3 fourToThree(float4 v)
 	
 	return v3;
 }
+
+float3 scalProduct(float s, float3 u)
+{
+    float3 temp;
+    temp.x=u.x*s;
+    temp.y=u.y*s;
+    temp.z=u.z*s;
+	return temp;
+}
+
+float magnitude(float3 m)
+{
+    return sqrt(m.x*m.x + m.y*m.y + m.z*m.z);
+}
+
+float3 normalize(float3 n)
+{
+    float3 temp;
+    temp.x=n.x/magnitude(n);
+    temp.y=n.y/magnitude(n);
+    temp.z=n.z/magnitude(n);
+	return temp;
+}
+float3 subtract(float3 u, float3 v)
+{
+    float3 temp;
+    temp.x=u.x - v.x;
+    temp.y=u.y - v.y;
+    temp.z=u.z - v.z;
+	return temp;
+}
+
+//angoli
+float normalize180(float angle)
+{
+      if(angle>180.0f)
+         angle -= 360.0f;
+      else if(angle<-180.0f)
+         angle += 360.0f;
+      return angle;
+}
+float getSign(float f)
+{
+      if(f<0.0f)
+      return -1.0f;
+      else
+      return 1.0f;
+}
