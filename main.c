@@ -223,7 +223,7 @@ void tanksCollision(tank* t1, tank* t2)
 {
 	float dumping = 0.2f;
 	
-	if ( sqrtf( (t2->pos[0] - t1->pos[0]) * (t2->pos[0] - t1->pos[0]) + (t2->pos[2] - t1->pos[2]) * (t2->pos[2] - t1->pos[2])) < (t1->boundingRad + t2->boundingRad) )
+	if ( sqrtf( (t2->pos[0] - t1->pos[0]) * (t2->pos[0] - t1->pos[0]) + (t2->pos[1] - t1->pos[1]) * (t2->pos[1] - t1->pos[1]) + (t2->pos[2] - t1->pos[2]) * (t2->pos[2] - t1->pos[2])) < (t1->boundingRad + t2->boundingRad) )
 	{
 		t1->pos[0] = t1->lastPos.x;
 		t1->pos[2] = t1->lastPos.z;
@@ -1494,6 +1494,12 @@ void idle(void)
     	    tanks[i].animationL += 3;
     	    tanks[i].animationR += 3;
         }
+		
+		//morte carrarmato nemico
+		if (i!=0 && tanks[i].life <= 0.0f && tanks[i].pos[1] > -5.0f)
+		{
+			tanks[i].pos[1] -= 0.1f;
+		}
     }//END FOR
 	
 	//ricarica
