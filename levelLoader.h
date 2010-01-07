@@ -1,14 +1,14 @@
 #include "collisions.h"
 
 #define DIM_TILE 5.0f
-#define PWUP_RESPAWN_TIME 2000
+#define PWUP_RESPAWN_TIME 10.0f
 
 struct _powerup
 {
 	obj* model;
 	char type;
 	int active;
-	int timer;
+	float timer;
 };
 typedef struct _powerup powerup;
 

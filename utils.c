@@ -1,3 +1,4 @@
+#include <math.h>
 #include "utils.h"
 
 float dotProduct(float3 a, float3 b)

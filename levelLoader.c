@@ -52,27 +52,35 @@ map* loadLevel(char* path)
 					switch (line[x+2]) {
 						case '.':
 							myMap->obs[x][y].model = obs[0];
+							myMap->obs[x][y].type = 0;
 							break;
 						case 'Y':
 							myMap->obs[x][y].model = obs[1];
+							myMap->obs[x][y].type = 1;
 							break;
 						case 'I':
 							myMap->obs[x][y].model = obs[2];
+							myMap->obs[x][y].type = 1;
 							break;
 						case '=':
 							myMap->obs[x][y].model = obs[3];
+							myMap->obs[x][y].type = 1;
 							break;
 						case 'n':
 							myMap->obs[x][y].model = obs[4];
+							myMap->obs[x][y].type = 1;
 							break;
 						case 'u':
 							myMap->obs[x][y].model = obs[5];
+							myMap->obs[x][y].type = 1;
 							break;
 						case '(':
 							myMap->obs[x][y].model = obs[6];
+							myMap->obs[x][y].type = 1;
 							break;
 						case ')':
 							myMap->obs[x][y].model = obs[7];
+							myMap->obs[x][y].type = 1;
 							break;
 						case 'p':
 							myMap->obs[x][y].model = obs[0];
@@ -82,12 +90,14 @@ map* loadLevel(char* path)
 							break;
 						case 'h':
 							myMap->obs[x][y].model = obs[0];
+							myMap->obs[x][y].type = 0;
 							myMap->pwup[x][y].model = pwup[1];
 							myMap->pwup[x][y].type = line[x+2];
 							myMap->pwup[x][y].active = 1;
 							break;
 						case '4':
 							myMap->obs[x][y].model = obs[0];
+							myMap->obs[x][y].type = 0;
 							myMap->pwup[x][y].model = pwup[2];
 							myMap->pwup[x][y].type = line[x+2];
 							myMap->pwup[x][y].active = 1;
@@ -95,6 +105,7 @@ map* loadLevel(char* path)
 							
 						default:
 							myMap->obs[x][y].model = obs[0];
+							myMap->obs[x][y].type = 0;
 							myMap->pwup[x][y].active = 0;
 							break;
 					}
