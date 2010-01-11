@@ -34,6 +34,7 @@ struct _bullet
 	float a[3];
 	float mass;
 	float3 scale;
+	int hit;
 };
 typedef struct _bullet bullet;
 
@@ -140,8 +141,28 @@ float timePassed = 0.0f;
 //float kkk = 0.0f;
 float xBullet = 0.0f;
 float yBullet = 0.0f;
+//menu
+int showMenu = 1;
 
 //FUNZIONI
+
+// Crea e gestisce i menu
+void menu()
+{
+//	glMatrixMode(GL_MODELVIEW);
+//	glMatrixMode(GL_PROJECTION);
+//
+//	glLoadIdentity();
+//	gluOrtho2D(0, WIDTH, 0, HEIGHT);
+	
+//	glMatrixMode(GL_MODELVIEW);
+//	glPushMatrix();
+//	glLoadIdentity();
+//	glColor3f(1.0f, 1.0f, 1.0f);
+//	glutSolidCube(0.1f);
+//	
+//	glPopMatrix();
+}
 
 // Controlla se  avvenuta una collisione con i confini della mappa
 void borderCollision(tank* t, int i)
@@ -504,7 +525,6 @@ void renderBitmapString(float x, float y, void *font, char *string)
     }
 }
 
-
 void makeGrid(float lenght, float width, float nol)
 {
 	float l = lenght * 0.5;
@@ -566,6 +586,7 @@ void shoot(tank *tankT)
 	b->bullet.scale.x = 1.0f;
 	b->bullet.scale.y = 1.0f;
 	b->bullet.scale.z = 1.0f;
+	b->bullet.hit = -1;
 	b->lifetime = 0.0f;
 	
 	b->next = tankT->bulletRoot;
@@ -876,9 +897,16 @@ void reshape ( int w, int h)
 	glLoadIdentity();
 	
 	glViewport(0, 0, w, h);
-	ar = (float)w/(float)h;
-	gluPerspective(45.0, ar, 0.2f, 500.0f);
 	
+	if (showMenu)
+	{
+		gluOrtho2D(0, WIDTH, 0, HEIGHT);
+	}
+	else
+	{
+		ar = (float)w/(float)h;
+		gluPerspective(45.0, ar, 0.2f, 500.0f);
+	}
 	
 	glMatrixMode(GL_MODELVIEW);
 	
@@ -890,6 +918,9 @@ void reshape ( int w, int h)
 //inizializzazione
 void init(void)
 {
+	//calcolo l'aspect ratio iniziale
+	ar = (float)WIDTH/(float)HEIGHT;
+	
 	//carico il livello
 	levelMap = loadLevel("levels/sample.lvl");
 	
@@ -1051,13 +1082,36 @@ void init(void)
 //visualizzazione
 void display(void)
 {
+	if (showMenu)
+	{
+//		menu();
+	glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+		glMatrixMode(GL_PROJECTION);
+		glLoadIdentity();
+		gluOrtho2D(0, WIDTH, 0, HEIGHT);
+		glMatrixMode(GL_MODELVIEW);
+		glLoadIdentity();
+		glBegin(GL_QUADS);
+		glVertex3f(400.0f, 0.0f, 0.0f);
+		glVertex3f(WIDTH, 0.0f, 0.0f);
+		glVertex3f(WIDTH, HEIGHT, 0.0f);
+		glVertex3f(0.0f, HEIGHT, 0.0f);
+		glEnd();
+		
+		glutSwapBuffers();
+	}
+	else
+	{
 	int i = 0;
 
-	displayDesertLights();
-	
 	glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-	glLoadIdentity();
 	
+		glMatrixMode(GL_PROJECTION);
+	glLoadIdentity();
+		gluPerspective(45.0, ar, 0.2f, 500.0f);
+		glMatrixMode(GL_MODELVIEW);
+		glLoadIdentity();
+		
     //third person view [turretView==0]
     //-camera is distant distanceFromCamera multiplied by sin or cos on dependency to tank rotation
     //-from tank position
@@ -1093,6 +1147,7 @@ void display(void)
 				  tanks[0].pos[0] - 5.0f*sin((tanks[0].rot+tanks[0].userTurret.rot)*M_PI/180.0f), 2.5f + sin(tanks[0].userTurret.tankCannon.rot*M_PI/180.0f),tanks[0].pos[2] - 5.0f*cos((tanks[0].rot+tanks[0].userTurret.rot)*M_PI/180.0f),//At
 				  0.0f, 1.0f, 0.0f);//Up
     }
+	displayDesertLights();
 	
 	//disegno i modelli
 	
@@ -1236,83 +1291,99 @@ void display(void)
     }
 	
 	//checkCollision(&tanks[0],tanks[0].rot);
+		glutSwapBuffers();
+	}
 	
-	glutSwapBuffers();
 }
 
 //lettura input
 void keyboard(unsigned char key, int x, int y)
 {
-	switch(key)
+	if (showMenu)
 	{
-		case 27: //Esc
-			exit(0);
-			break;
-		case 'w': //forward
-			tanks[0].enginePower = 300.0f;
-			break;
-		case 's': //back
-			tanks[0].enginePower = -300.0f;
-			break;
-		case 'a': //left
-			if(tanks[0].v[2]==0.0f)
-			{
-				tanks[0].rot += 1.5f;
-				animateLeftTurn(&tanks[0]);
-			}
-			break;
-		case 'd': //right
-			if(tanks[0].v[2]==0.0f)
-			{
-				tanks[0].rot -= 1.5f;
-				animateRightTurn(&tanks[0]);
-			}
-			break;
-		case 't': //enable/disable turret view
-			if(turretView==0)
-				turretView = 1;
-			else
-				turretView = 0;
-			break;
-		case 'c': //turret right
-			tanks[0].userTurret.rot -= 1.5f;
-			break;
-			
-		case 'z': //turret left
-			tanks[0].userTurret.rot += 1.5f;
-			break;
-		case 'e': //cannon up
-			if(tanks[0].userTurret.tankCannon.rot<15.0f)
-				tanks[0].userTurret.tankCannon.rot += 1.5f;
-			break;
-		case 'q': //cannon down
-			if(tanks[0].userTurret.tankCannon.rot>0.0f)
-				tanks[0].userTurret.tankCannon.rot -= 1.5f;
-			break;
-		case 35: //Brakes
-			tanks[0].v[0] *= 0.5f;
-			tanks[0].v[2] *= 0.5f;
-			break;
-		case 32: //Space
-            if(tanks[0].rechargeTime>=tanks[0].rechargeNeeded)
-			    shoot(&tanks[0]);
-			break;
-		case '<':
-			fixedView = fixedView ? 0 : 1;
-			break;
-		case '0':
-			tanks[0].pos[0] = 0.0f;
-			tanks[0].pos[1] = 0.5f;
-			tanks[0].pos[2] = 0.0f;
-			break;
-
+		switch (key)
+		{
+			case 'm':
+				showMenu = showMenu ? 0 : 1;
+				break;
+			default:
+				break;
+		}
+	}
+	else
+	{
+		switch(key)
+		{
+			case 27: //Esc
+				exit(0);
+				break;
+			case 'w': //forward
+				tanks[0].enginePower = 300.0f;
+				break;
+			case 's': //back
+				tanks[0].enginePower = -300.0f;
+				break;
+			case 'a': //left
+				if(tanks[0].v[2]==0.0f)
+				{
+					tanks[0].rot += 1.5f;
+					animateLeftTurn(&tanks[0]);
+				}
+				break;
+			case 'd': //right
+				if(tanks[0].v[2]==0.0f)
+				{
+					tanks[0].rot -= 1.5f;
+					animateRightTurn(&tanks[0]);
+				}
+				break;
+			case 't': //enable/disable turret view
+				if(turretView==0)
+					turretView = 1;
+				else
+					turretView = 0;
+				break;
+			case 'c': //turret right
+				tanks[0].userTurret.rot -= 1.5f;
+				break;
+				
+			case 'z': //turret left
+				tanks[0].userTurret.rot += 1.5f;
+				break;
+			case 'e': //cannon up
+				if(tanks[0].userTurret.tankCannon.rot<15.0f)
+					tanks[0].userTurret.tankCannon.rot += 1.5f;
+				break;
+			case 'q': //cannon down
+				if(tanks[0].userTurret.tankCannon.rot>0.0f)
+					tanks[0].userTurret.tankCannon.rot -= 1.5f;
+				break;
+			case 35: //Brakes
+				tanks[0].v[0] *= 0.5f;
+				tanks[0].v[2] *= 0.5f;
+				break;
+			case 32: //Space
+				if(tanks[0].rechargeTime>=tanks[0].rechargeNeeded)
+					shoot(&tanks[0]);
+				break;
+			case '<':
+				fixedView = fixedView ? 0 : 1;
+				break;
+			case '0':
+				tanks[0].pos[0] = 0.0f;
+				tanks[0].pos[1] = 0.5f;
+				tanks[0].pos[2] = 0.0f;
+				break;
+			case 'm':
+				showMenu = showMenu ? 0 : 1;
+				break;
+				
+		}
 	}
 }
 
 void idle(void)
 {
-	int i, x, y;
-	
 	struct timeval newTime;
 	
 	gettimeofday(&newTime, NULL);
@@ -1323,7 +1394,14 @@ void idle(void)
 	old.tv_sec = newTime.tv_sec;
 	old.tv_usec = newTime.tv_usec;
 	
+	if (showMenu)
+	{
+	}
+	else
+	{
 	levelMap->pwupRot = fmodf(levelMap->pwupRot + 3.0f, 360.0f);
+	
+	int i, x, y;
 	
 	for(i=0;i<levelMap->enemies+1;i++)
     {
@@ -1411,16 +1489,6 @@ void idle(void)
 		tanks[i].lastPos.z = tanks[i].pos[2];
 		tanks[i].lastRot = tanks[i].rot;
 		
-		// normalizzazione angoli
-//		if (tanks[i].rot > 180.0f)
-//		{
-//			tanks[i].rot -= 360.0f;
-//		}
-//		else if (tanks[i].rot < -180.0f)
-//		{
-//			tanks[i].rot += 360.0f;
-//		}
-		
     	//FISICA PALLOTTOLE
     	bullets *p;
     	//elimina dalla struttura la radice con posizione Y negativa
@@ -1439,27 +1507,25 @@ void idle(void)
             int j = 0;
             for(j=0;j<levelMap->enemies+1;j++)
             {
-				if(j!=i) 
-                {
-					if(bulletTankCollision(&p->bullet, &tanks[j]))
-					{
-						p->bullet.v[0] = 0.0f;
-						p->bullet.v[1] = 0.0f;
-						p->bullet.v[2] = 0.0f;
-						p->bullet.a[1] = 0.0f;
-					}
-					if (p->bullet.a[1] == 0)
-					{
-						p->lifetime += (float)deltaT;
-						p->bullet.scale.x += 5.0f;
-						p->bullet.scale.y += 0.5f;
-						p->bullet.scale.z += 5.0f;
-						if (p->bullet.scale.x == 6.0f)
-							tanks[j].life -= 10.0f * tanks[i].weaponPower;
-//						sprintf(printScreen[6],"COLPITO carrarmato %i ! Vita rimasta: %f",j,tanks[j].life);
-					}
-                }
+				if(j!=i && bulletTankCollision(&p->bullet, &tanks[j]))
+				{
+					p->bullet.v[0] = 0.0f;
+					p->bullet.v[1] = 0.0f;
+					p->bullet.v[2] = 0.0f;
+					p->bullet.a[1] = 0.0f;
+					p->bullet.hit = j;
+				}
             }
+			if (p->bullet.hit >= 0)
+			{
+				p->lifetime += (float)deltaT;
+				p->bullet.scale.x += 5.0f;
+				p->bullet.scale.y += 0.5f;
+				p->bullet.scale.z += 5.0f;
+				if (p->bullet.scale.x == 6.0f)
+					tanks[p->bullet.hit].life -= 10.0f * tanks[i].weaponPower;
+//				sprintf(printScreen[6],"COLPITO carrarmato %i ! Vita rimasta: %f",p->bullet.hit,tanks[p->bullet.hit].life);
+			}
 			if (bulletObsCollision(&p->bullet))
 			{
 				p->lifetime += (float)deltaT;
@@ -1564,7 +1630,7 @@ void idle(void)
 //    sprintf(stampe2,"Animation |%i|",tanks[0].animationL);
 	sprintf(stampe3,"Speed |%i|",(int)fabs(tanks[0].speed));
 	sprintf(printScreen[0], "HP |%d|", (int)tanks[0].life);
-
+	}
 	glutPostRedisplay();
 }
 
@@ -1578,8 +1644,8 @@ int main (int argc, char** argv)
 	
 	glutDisplayFunc(display);
 	glutIdleFunc(idle);
-	glutReshapeFunc(reshape);
 	glutKeyboardFunc(keyboard);
+	glutReshapeFunc(reshape);
 	
 	
 	init();
