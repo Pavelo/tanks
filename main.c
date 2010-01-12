@@ -143,26 +143,10 @@ float xBullet = 0.0f;
 float yBullet = 0.0f;
 //menu
 int showMenu = 1;
+int selectBoxPlace = 0;
+int entries = 4;
 
 //FUNZIONI
-
-// Crea e gestisce i menu
-void menu()
-{
-//	glMatrixMode(GL_MODELVIEW);
-//	glMatrixMode(GL_PROJECTION);
-//
-//	glLoadIdentity();
-//	gluOrtho2D(0, WIDTH, 0, HEIGHT);
-	
-//	glMatrixMode(GL_MODELVIEW);
-//	glPushMatrix();
-//	glLoadIdentity();
-//	glColor3f(1.0f, 1.0f, 1.0f);
-//	glutSolidCube(0.1f);
-//	
-//	glPopMatrix();
-}
 
 // Controlla se  avvenuta una collisione con i confini della mappa
 void borderCollision(tank* t, int i)
@@ -900,7 +884,7 @@ void reshape ( int w, int h)
 	
 	if (showMenu)
 	{
-		gluOrtho2D(0, WIDTH, 0, HEIGHT);
+		gluOrtho2D(0, 1.0f, 0, 1.0f);
 	}
 	else
 	{
@@ -915,11 +899,20 @@ void reshape ( int w, int h)
 	//pixels = malloc(sizeof(GLubyte)*w*h);
 }
 
+void initMenu(void)
+{
+	loadTGA("texture/menu_main.tga", 100);
+	loadTGA("texture/menu_levels.tga", 101);
+	loadTGA("texture/menu_credits.tga", 102);
+}
+
 //inizializzazione
 void init(void)
 {
 	//calcolo l'aspect ratio iniziale
 	ar = (float)WIDTH/(float)HEIGHT;
+	
+	initMenu();
 	
 	//carico il livello
 	levelMap = loadLevel("levels/sample.lvl");
@@ -1079,39 +1072,78 @@ void init(void)
     }
 }
 
-//visualizzazione
-void display(void)
+void drawQuad(int textureId)
 {
-	if (showMenu)
+	if (textureId != -1)
 	{
-//		menu();
-	glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-		glMatrixMode(GL_PROJECTION);
-		glLoadIdentity();
-		gluOrtho2D(0, WIDTH, 0, HEIGHT);
-		glMatrixMode(GL_MODELVIEW);
-		glLoadIdentity();
-		glBegin(GL_QUADS);
-		glVertex3f(400.0f, 0.0f, 0.0f);
-		glVertex3f(WIDTH, 0.0f, 0.0f);
-		glVertex3f(WIDTH, HEIGHT, 0.0f);
-		glVertex3f(0.0f, HEIGHT, 0.0f);
-		glEnd();
-		
-		glutSwapBuffers();
+		glEnable(GL_TEXTURE_2D);
+		glBindTexture(GL_TEXTURE_2D, textureId);
 	}
 	else
-	{
-	int i = 0;
+		glDisable(GL_LIGHTING);
+	glBegin(GL_QUADS);
+	glTexCoord2f(0.0f, 0.0f);
+	glVertex3f(0.0f, 0.0f, 0.0f);
+	glTexCoord2f(1.0f, 0.0f);
+	glVertex3f(1.0f, 0.0f, 0.0f);
+	glTexCoord2f(1.0f, 1.0f);
+	glVertex3f(1.0f, 1.0f, 0.0f);
+	glTexCoord2f(0.0f, 1.0f);
+	glVertex3f(0.0f , 1.0f, 0.0f);
+	glEnd();
+	if (textureId != -1)
+		glDisable(GL_TEXTURE_2D);
+	else
+		glEnable(GL_LIGHTING);
+}
 
+// visualizza i menu
+void displayMenu(void)
+{
+	float3 selectBoxCoord;
+	float gap;
+	
 	glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	
-		glMatrixMode(GL_PROJECTION);
+	glMatrixMode(GL_PROJECTION);
 	glLoadIdentity();
-		gluPerspective(45.0, ar, 0.2f, 500.0f);
-		glMatrixMode(GL_MODELVIEW);
-		glLoadIdentity();
-		
+	gluOrtho2D(0, 1.0f, 0, 1.0f);
+	
+	glMatrixMode(GL_MODELVIEW);
+	glLoadIdentity();
+	
+	drawQuad(100);
+	
+	selectBoxCoord.x = 0.115f;
+	selectBoxCoord.y = 0.33f;
+	selectBoxCoord.z = 0.1f;
+	gap = -0.1f;
+	glEnable(GL_BLEND);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	glColor4f(1.0f, 0.0f, 0.0f, 0.18f);
+	glPushMatrix();
+	glTranslatef(selectBoxCoord.x, selectBoxCoord.y + (selectBoxPlace * gap), selectBoxCoord.z);
+	glScalef(0.3f, 0.1f, 1.0f);
+	drawQuad(-1);
+	glPopMatrix();
+	glDisable(GL_BLEND);
+	
+	glutSwapBuffers();
+}
+
+void displayGame(void)
+{
+	int i = 0;
+	
+	glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	
+	glMatrixMode(GL_PROJECTION);
+	glLoadIdentity();
+	gluPerspective(45.0, ar, 0.2f, 500.0f);
+	
+	glMatrixMode(GL_MODELVIEW);
+	glLoadIdentity();
+	
     //third person view [turretView==0]
     //-camera is distant distanceFromCamera multiplied by sin or cos on dependency to tank rotation
     //-from tank position
@@ -1120,11 +1152,11 @@ void display(void)
     //-from tank position
     if(fixedView==1) //fixed view
     {
-//		gluLookAt(tanks[0].pos[0],//Eye x
-//				  3.5f,//Eye y
-//				  tanks[0].pos[2] + distanceFromCamera,//Eye z
-//				  tanks[0].pos[0], 3.0f,tanks[0].pos[2],//At
-//				  0.0f, 1.0f, 0.0f);//Up
+		//		gluLookAt(tanks[0].pos[0],//Eye x
+		//				  3.5f,//Eye y
+		//				  tanks[0].pos[2] + distanceFromCamera,//Eye z
+		//				  tanks[0].pos[0], 3.0f,tanks[0].pos[2],//At
+		//				  0.0f, 1.0f, 0.0f);//Up
 		gluLookAt(tanks[0].pos[0]+5.0f,//Eye x
 				  1.5f,//Eye y
 				  tanks[0].pos[2]-2.0f,//Eye z
@@ -1225,11 +1257,11 @@ void display(void)
 			if (p->lifetime < LIFETIME)
 			{
 				glPushMatrix();
-					myColor[3]=1.0-p->lifetime/LIFETIME;
-					glColor4fv(myColor);
-					glTranslatef(p->bullet.pos[0],p->bullet.pos[1],p->bullet.pos[2]);
-					glScalef(p->bullet.scale.x, p->bullet.scale.y, p->bullet.scale.z);
-					glutSolidSphere(p->bullet.radius, 10, 10);
+				myColor[3]=1.0-p->lifetime/LIFETIME;
+				glColor4fv(myColor);
+				glTranslatef(p->bullet.pos[0],p->bullet.pos[1],p->bullet.pos[2]);
+				glScalef(p->bullet.scale.x, p->bullet.scale.y, p->bullet.scale.z);
+				glutSolidSphere(p->bullet.radius, 10, 10);
 				glPopMatrix();
 			}
             
@@ -1291,9 +1323,37 @@ void display(void)
     }
 	
 	//checkCollision(&tanks[0],tanks[0].rot);
-		glutSwapBuffers();
+	glutSwapBuffers();
+}
+
+//visualizzazione
+void display(void)
+{
+	if (showMenu)
+	{
+		displayMenu();
 	}
-	
+	else
+	{
+		displayGame();
+	}
+}
+
+void specialKeys(int key, int x, int y)
+{
+	if (showMenu)
+	{
+		switch (key) {
+			case GLUT_KEY_DOWN:
+				selectBoxPlace = fmod(selectBoxPlace+1, 4);
+				break;
+			case GLUT_KEY_UP:
+				selectBoxPlace = fmod(selectBoxPlace+3, 4);
+				break;
+			default:
+				break;
+		}
+	}
 }
 
 //lettura input
@@ -1303,6 +1363,9 @@ void keyboard(unsigned char key, int x, int y)
 	{
 		switch (key)
 		{
+			case 27:
+				exit(0);
+				break;
 			case 'm':
 				showMenu = showMenu ? 0 : 1;
 				break;
@@ -1646,7 +1709,7 @@ int main (int argc, char** argv)
 	glutIdleFunc(idle);
 	glutKeyboardFunc(keyboard);
 	glutReshapeFunc(reshape);
-	
+	glutSpecialFunc(specialKeys);
 	
 	init();
 	
