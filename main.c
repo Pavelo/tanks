@@ -143,8 +143,12 @@ float xBullet = 0.0f;
 float yBullet = 0.0f;
 //menu
 int showMenu = 1;
+int menuAction = -1;
 int selectBoxPlace = 0;
 int entries = 4;
+char printLvlName[10][32];
+char levelFileName[10][32];
+int listLenght;
 
 //FUNZIONI
 
@@ -495,7 +499,7 @@ void renderBitmapString(float x, float y, void *font, char *string)
 		glutBitmapCharacter(font, *c);
     }
     
-    glColor3f(0.0f, 0.5f, 0.0f);
+    glColor3f(0.5f, 0.5f, 0.5f);
 	glRasterPos2f(x+1,y+1);
     for (c=string; *c != '\0'; c++)
     {
@@ -503,6 +507,30 @@ void renderBitmapString(float x, float y, void *font, char *string)
     }
     glColor3f(0.0f, 0.0f, 0.0f);
 	glRasterPos2f(x+2,y+2);
+    for (c=string; *c != '\0'; c++)
+    {
+		glutBitmapCharacter(font, *c);
+    }
+}
+
+void renderLvlMenuString(float x, float y, void *font, char *string)
+{
+	char* c;
+	
+	glColor3f(1.0f, 0.0f, 0.0f);
+	glRasterPos2f(x, y);
+	for (c=string; *c != '\0'; c++)
+	{
+		glutBitmapCharacter(font, *c);
+	}
+    glColor3f(0.7f, 0.0f, 0.0f);
+	glRasterPos2f(x+1,y);
+    for (c=string; *c != '\0'; c++)
+    {
+		glutBitmapCharacter(font, *c);
+    }
+    glColor3f(0.3f, 0.0f, 0.0f);
+	glRasterPos2f(x+2,y);
     for (c=string; *c != '\0'; c++)
     {
 		glutBitmapCharacter(font, *c);
@@ -904,6 +932,14 @@ void initMenu(void)
 	loadTGA("texture/menu_main.tga", 100);
 	loadTGA("texture/menu_levels.tga", 101);
 	loadTGA("texture/menu_credits.tga", 102);
+	
+	DIR* directory = opendir("levels");
+	int i;
+	
+	listLenght = levelList(directory, levelFileName);
+	
+	for (i=0; i<listLenght; i++)
+		printf("%s\n", levelFileName[i]);
 }
 
 //inizializzazione
@@ -1072,6 +1108,20 @@ void init(void)
     }
 }
 
+void printLvlList(float x, float y)
+{
+	int i;
+	
+	orthogonalStart();
+	glPushMatrix();
+	glLoadIdentity();
+	for (i=0; i<10; i++) {
+		renderLvlMenuString(x, y+i*20.0f, GLUT_BITMAP_9_BY_15, levelFileName[i]);
+	}
+	glPopMatrix();
+	orthogonalEnd();
+}
+
 void drawQuad(int textureId)
 {
 	if (textureId != -1)
@@ -1112,21 +1162,68 @@ void displayMenu(void)
 	glMatrixMode(GL_MODELVIEW);
 	glLoadIdentity();
 	
-	drawQuad(100);
-	
-	selectBoxCoord.x = 0.115f;
-	selectBoxCoord.y = 0.33f;
-	selectBoxCoord.z = 0.1f;
-	gap = -0.1f;
-	glEnable(GL_BLEND);
-	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-	glColor4f(1.0f, 0.0f, 0.0f, 0.18f);
-	glPushMatrix();
-	glTranslatef(selectBoxCoord.x, selectBoxCoord.y + (selectBoxPlace * gap), selectBoxCoord.z);
-	glScalef(0.3f, 0.1f, 1.0f);
-	drawQuad(-1);
-	glPopMatrix();
-	glDisable(GL_BLEND);
+	switch (menuAction)
+	{
+		case -1:
+			// sfondo
+			drawQuad(100);
+			
+			//rettangolo di selezione
+			entries = 4;
+			selectBoxCoord.x = 0.115f;
+			selectBoxCoord.y = 0.33f;
+			selectBoxCoord.z = 0.1f;
+			gap = -0.1f;
+			glEnable(GL_BLEND);
+			glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+			glColor4f(1.0f, 0.0f, 0.0f, 0.18f);
+			glPushMatrix();
+			glTranslatef(selectBoxCoord.x, selectBoxCoord.y + (selectBoxPlace * gap), selectBoxCoord.z);
+			glScalef(0.3f, 0.1f, 1.0f);
+			drawQuad(-1);
+			glPopMatrix();
+			glDisable(GL_BLEND);				
+			break;
+			
+		case 0: // new game
+			showMenu = 0;
+			menuAction = -1;
+			break;
+			
+		case 1: // play level
+			printLvlList(WIDTH/2, 373);
+			drawQuad(101);
+			
+			//rettangolo di selezione
+			selectBoxCoord.x = 0.480f;
+			selectBoxCoord.y = 0.372f;
+			selectBoxCoord.z = 0.1f;
+			gap = -0.0333f;
+			entries = listLenght;
+			//selectBoxPlace = 0;
+			glEnable(GL_BLEND);
+			glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+			glColor4f(1.0f, 0.0f, 0.0f, 0.30f);
+			glPushMatrix();
+			glTranslatef(selectBoxCoord.x, selectBoxCoord.y + (selectBoxPlace * gap), selectBoxCoord.z);
+			glScalef(0.5f, 0.03f, 1.0f);
+			drawQuad(-1);
+			glPopMatrix();
+			glDisable(GL_BLEND);				
+			break;
+		
+		case 2: // credits
+			drawQuad(102);
+			break;
+
+		case 3:
+			exit(0);
+			break;
+			
+		default:
+			menuAction = -1;
+			break;
+	}
 	
 	glutSwapBuffers();
 }
@@ -1341,15 +1438,49 @@ void display(void)
 
 void specialKeys(int key, int x, int y)
 {
-	if (showMenu)
+	if (showMenu && menuAction == -1)
 	{
-		switch (key) {
+		switch (key)
+		{
 			case GLUT_KEY_DOWN:
-				selectBoxPlace = fmod(selectBoxPlace+1, 4);
+				selectBoxPlace = fmod(selectBoxPlace+1, entries);
 				break;
 			case GLUT_KEY_UP:
-				selectBoxPlace = fmod(selectBoxPlace+3, 4);
+				selectBoxPlace = fmod(selectBoxPlace+entries-1, entries);
 				break;
+
+			default:
+				break;
+		}
+	}
+	else if (showMenu && menuAction == 1)
+	{
+		switch (key)
+		{
+			case GLUT_KEY_DOWN:
+				selectBoxPlace = fmod(selectBoxPlace+1, entries);
+				break;
+			case GLUT_KEY_UP:
+				selectBoxPlace = fmod(selectBoxPlace+entries-1, entries);
+				break;
+			case GLUT_KEY_LEFT:
+				menuAction = -1;
+				selectBoxPlace = 1;
+				break;
+
+			default:
+				break;
+		}
+	}
+	else if (showMenu && menuAction == 2)
+	{
+		switch (key)
+		{
+			case GLUT_KEY_LEFT:
+				menuAction = -1;
+				selectBoxPlace = 2;
+				break;
+
 			default:
 				break;
 		}
@@ -1359,26 +1490,67 @@ void specialKeys(int key, int x, int y)
 //lettura input
 void keyboard(unsigned char key, int x, int y)
 {
-	if (showMenu)
+	if (showMenu && menuAction == -1)
 	{
 		switch (key)
 		{
-			case 27:
-				exit(0);
-				break;
-			case 'm':
+			case 27: // esc
 				showMenu = showMenu ? 0 : 1;
 				break;
+			case 'm':
+				exit(0);
+				break;
+			case 13: // CR (carriage return - corrisponde a INVIO su mac)
+				menuAction = selectBoxPlace;
+				selectBoxPlace = 0;
+				break;
+
 			default:
 				break;
 		}
 	}
-	else
+	else if (showMenu && menuAction == 1)
+	{
+		switch (key) {
+			case 27: // esc
+				menuAction = -1;
+				selectBoxPlace = 1;
+				break;
+			case 13: // CR
+					 // TODO: loadGame
+				break;
+
+			default:
+				break;
+		}
+	}
+	else if (showMenu && menuAction == 2)
+	{
+		switch (key)
+		{
+			case 27: // esc
+				menuAction = -1;
+				selectBoxPlace = 2;
+				break;
+			case ' ':
+				menuAction = -1;
+				selectBoxPlace = 2;
+				break;
+			case 13: // CR (carriage return - corrisponde a INVIO su mac)
+				menuAction = -1;
+				selectBoxPlace = 2;
+				break;
+				
+			default:
+				break;
+		}
+	}
+	else if (!showMenu)
 	{
 		switch(key)
 		{
 			case 27: //Esc
-				exit(0);
+				showMenu = showMenu ? 0 : 1;
 				break;
 			case 'w': //forward
 				tanks[0].enginePower = 300.0f;
@@ -1438,7 +1610,7 @@ void keyboard(unsigned char key, int x, int y)
 				tanks[0].pos[2] = 0.0f;
 				break;
 			case 'm':
-				showMenu = showMenu ? 0 : 1;
+				exit(0);
 				break;
 				
 		}

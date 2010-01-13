@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
+#include <string.h>
 #include "levelLoader.h"
 
 map* loadLevel(char* path)
@@ -210,3 +211,25 @@ void drawLevel(map* myMap)
 	glPopMatrix();
 }
 
+int levelList(DIR* directory, char fileName[][32])
+{
+	struct dirent* dent;
+	int i = 0;
+	
+	if(directory)
+	{
+		while((dent=readdir(directory)))
+		{
+			if (dent->d_name[0] != '.')
+			{
+				sprintf(fileName[i], "%s", dent->d_name);
+				i++;
+			}
+		}
+		closedir(directory);
+	}
+	else
+		printf("Failed to open \"levels\" directory\n");
+	
+	return i;
+}

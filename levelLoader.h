@@ -1,4 +1,5 @@
 #include "collisions.h"
+#include <dirent.h>
 
 #define DIM_TILE 5.0f
 #define PWUP_RESPAWN_TIME 10.0f
@@ -37,5 +38,6 @@ struct _map
 };
 typedef struct _map map;
 
+int levelList(DIR* directory, char fileName[][32]);
 map* loadLevel(char* path);
 void drawLevel(map* myMap);
