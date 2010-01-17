@@ -146,7 +146,6 @@ int showMenu = 1;
 int menuAction = -1;
 int selectBoxPlace = 0;
 int entries = 4;
-char printLvlName[10][32];
 char levelFileName[10][32];
 int listLenght;
 
@@ -950,14 +949,10 @@ void init(void)
 	
 	initMenu();
 	
-	//carico il livello
-	levelMap = loadLevel("levels/sample.lvl");
+//	//carico il livello
+//	levelMap = loadLevel("levels/sample.lvl");
 	
 	setDesertLights();
-	
-	// da usare solo insieme a glColor per definire un colore indipendente dalle sorgenti di luce!
-	//	glColorMaterial(GL_FRONT, GL_DIFFUSE);
-	//	glEnable(GL_COLOR_MATERIAL);
 	
 	glEnable(GL_DEPTH_TEST);
 	
@@ -976,9 +971,9 @@ void init(void)
 	gettimeofday(&old, NULL);
 	srand(old.tv_sec);
 	
-	levelMap->pwupRot = 0.0f;
+//	levelMap->pwupRot = 0.0f;
 	
-	tanks = (tank*) malloc((levelMap->enemies+1) * sizeof(tank));
+//	tanks = (tank*) malloc((levelMap->enemies+1) * sizeof(tank));
 	
 	//carico i modelli del carro armato
 	objTank[0] = (obj*) loadOBJ("obj/tank_body.obj");
@@ -995,6 +990,169 @@ void init(void)
 	createBoundingBox(objTank[5]);
 	
 	objTank[5]->bb.min.z -= 1.7f;
+	
+//	//definizione strutture
+//	//carro armato
+//	int i, j;
+//	for(i=0;i<levelMap->enemies+1;i++)
+//	{
+//    	tanks[i].scale = 1.0f;
+//		
+//		if (i==0) {
+//			tanks[i].pos[0] = 0.0f;
+//			tanks[i].pos[1] = 0.5f;
+//			tanks[i].pos[2] = 0.0f;
+//		}
+//		else
+//		{
+//			tanks[i].pos[0] = i * 5;
+//			tanks[i].pos[1] = 0.5f;
+//			tanks[i].pos[2] = -levelMap->depth * DIM_TILE * 0.5f + 20;
+//		}
+//		tanks[i].lastPos.x = 0.0f;
+//		tanks[i].lastPos.y = 0.0f;
+//		tanks[i].lastPos.z = 0.0f;
+//    	tanks[i].v[0] = 0.0f;
+//    	tanks[i].v[1] = 0.0f;
+//    	tanks[i].v[2] = 0.0f;
+//    	tanks[i].a[0] = 0.0f;
+//    	tanks[i].a[1] = 0.0f;
+//    	tanks[i].a[2] = 0.0f;
+//    	tanks[i].rot  = normalize180(180.0f * (float)i);
+//		tanks[i].lastRot = 0.0f;
+//    	tanks[i].speed = 0.0f;
+//    	tanks[i].enginePower = 0.0f;
+//    	tanks[i].frictionForce = 0.0f;
+//    	tanks[i].throttle = 0.0f;
+//    	tanks[i].mass = 3.0f;
+//    	tanks[i].iperBoostAccumul = 0.0f;
+//    	tanks[i].iperBoost = 0.0f;
+//		tanks[i].weaponPower = 1;
+//    	tanks[i].bulletRoot = NULL;
+//    	tanks[i].ammo = 10;
+//    	tanks[i].life = 100.0f;
+//    	tanks[i].rechargeTime = 0.0f;
+//    	tanks[i].rechargeNeeded = 1.0f;
+//    	tanks[i].state = 2;
+//    	tanks[i].animationL = 0;
+//    	tanks[i].animationR = 0;
+//    	//torretta
+//    	tanks[i].userTurret.pos[0] = 0.0f;
+//    	tanks[i].userTurret.pos[1] = 0.72f;
+//    	tanks[i].userTurret.pos[2] = 0.0f;
+//    	tanks[i].userTurret.rot = 0.0f;
+//    	//cannone
+//    	tanks[i].userTurret.tankCannon.length = 2.20f;
+//    	tanks[i].userTurret.tankCannon.pos[0] = 0.0f;
+//    	tanks[i].userTurret.tankCannon.pos[1] = -0.06f;
+//		tanks[i].userTurret.tankCannon.pos[2] = -2.0f;
+//    	tanks[i].userTurret.tankCannon.rot = 0.0f;
+//    	//cingolo sx
+//    	tanks[i].userTreadL.pos[0] = -0.8f;
+//    	tanks[i].userTreadL.pos[1] = -0.06f;
+//    	tanks[i].userTreadL.pos[2] = 0.62f;
+//    	//cingolo dx
+//    	tanks[i].userTreadR.pos[0] = 0.8f;
+//    	tanks[i].userTreadR.pos[1] = -0.06f;
+//    	tanks[i].userTreadR.pos[2] = 0.62f;
+//		//bounding box in coordinate locali
+//		BoundingBox bbarr[] = {objTank[0]->bb, objTank[4]->bb, objTank[5]->bb};
+//		BoundingBox* tanksbb = BBUnion(bbarr, 3);
+//		tanks[i].boundingVol.vert[0].x = tanksbb->min.x;
+//		tanks[i].boundingVol.vert[0].y = tanksbb->min.y;
+//		tanks[i].boundingVol.vert[0].z = tanksbb->min.z;
+//		
+//		tanks[i].boundingVol.vert[1].x = tanksbb->min.x;
+//		tanks[i].boundingVol.vert[1].y = tanksbb->min.y;
+//		tanks[i].boundingVol.vert[1].z = tanksbb->max.z;
+//		
+//		tanks[i].boundingVol.vert[2].x = tanksbb->min.x;
+//		tanks[i].boundingVol.vert[2].y = tanksbb->max.y;
+//		tanks[i].boundingVol.vert[2].z = tanksbb->min.z;
+//		
+//		tanks[i].boundingVol.vert[3].x = tanksbb->min.x;
+//		tanks[i].boundingVol.vert[3].y = tanksbb->max.y;
+//		tanks[i].boundingVol.vert[3].z = tanksbb->max.z;
+//		
+//		tanks[i].boundingVol.vert[4].x = tanksbb->max.x;
+//		tanks[i].boundingVol.vert[4].y = tanksbb->min.y;
+//		tanks[i].boundingVol.vert[4].z = tanksbb->min.z;
+//		
+//		tanks[i].boundingVol.vert[5].x = tanksbb->max.x;
+//		tanks[i].boundingVol.vert[5].y = tanksbb->min.y;
+//		tanks[i].boundingVol.vert[5].z = tanksbb->max.z;
+//		
+//		tanks[i].boundingVol.vert[6].x = tanksbb->max.x;
+//		tanks[i].boundingVol.vert[6].y = tanksbb->max.y;
+//		tanks[i].boundingVol.vert[6].z = tanksbb->min.z;
+//		
+//		tanks[i].boundingVol.vert[7].x = tanksbb->max.x;
+//		tanks[i].boundingVol.vert[7].y = tanksbb->max.y;
+//		tanks[i].boundingVol.vert[7].z = tanksbb->max.z;
+//		//bounding box in coordinate world
+//		for (j=0; j<8; j++)
+//		{
+//			levelMap->cm.tanksBB[i].vert[j].x = 0.0f;
+//			levelMap->cm.tanksBB[i].vert[j].y = 0.0f;
+//			levelMap->cm.tanksBB[i].vert[j].z = 0.0f;
+//		}
+//		tanks[i].boundingRad = 2.2f;
+//    	
+//    	tanks[i].collision = 0;
+//    	tanks[i].collisionAngle = 0.0f;
+//    }
+}
+
+void printLvlList(float x, float y)
+{
+	int i;
+	
+	orthogonalStart();
+	glPushMatrix();
+	glLoadIdentity();
+	for (i=0; i<10; i++) {
+		renderLvlMenuString(x, y+i*20.0f, GLUT_BITMAP_9_BY_15, levelFileName[i]);
+	}
+	glPopMatrix();
+	orthogonalEnd();
+}
+
+void drawQuad(int textureId)
+{
+	if (textureId != -1)
+	{
+		glEnable(GL_TEXTURE_2D);
+		glBindTexture(GL_TEXTURE_2D, textureId);
+	}
+	else
+		glDisable(GL_LIGHTING);
+	glBegin(GL_QUADS);
+	glTexCoord2f(0.0f, 0.0f);
+	glVertex3f(0.0f, 0.0f, 0.0f);
+	glTexCoord2f(1.0f, 0.0f);
+	glVertex3f(1.0f, 0.0f, 0.0f);
+	glTexCoord2f(1.0f, 1.0f);
+	glVertex3f(1.0f, 1.0f, 0.0f);
+	glTexCoord2f(0.0f, 1.0f);
+	glVertex3f(0.0f , 1.0f, 0.0f);
+	glEnd();
+	if (textureId != -1)
+		glDisable(GL_TEXTURE_2D);
+	else
+		glEnable(GL_LIGHTING);
+}
+
+void loadGame(char* levelName)
+{
+	//carico il livello
+	char path[32];
+	char dir[] = "levels";
+	sprintf(path, "%s/%s", dir, levelName);
+	levelMap = loadLevel(path);
+	
+	levelMap->pwupRot = 0.0f;
+	
+	tanks = (tank*) malloc((levelMap->enemies+1) * sizeof(tank));
 	
 	//definizione strutture
 	//carro armato
@@ -1097,54 +1255,15 @@ void init(void)
 		//bounding box in coordinate world
 		for (j=0; j<8; j++)
 		{
-			levelMap->cm.tanksBB->vert[j].x = 0.0f;
-			levelMap->cm.tanksBB->vert[j].y = 0.0f;
-			levelMap->cm.tanksBB->vert[j].z = 0.0f;
+			levelMap->cm.tanksBB[i].vert[j].x = 0.0f;
+			levelMap->cm.tanksBB[i].vert[j].y = 0.0f;
+			levelMap->cm.tanksBB[i].vert[j].z = 0.0f;
 		}
 		tanks[i].boundingRad = 2.2f;
     	
     	tanks[i].collision = 0;
     	tanks[i].collisionAngle = 0.0f;
     }
-}
-
-void printLvlList(float x, float y)
-{
-	int i;
-	
-	orthogonalStart();
-	glPushMatrix();
-	glLoadIdentity();
-	for (i=0; i<10; i++) {
-		renderLvlMenuString(x, y+i*20.0f, GLUT_BITMAP_9_BY_15, levelFileName[i]);
-	}
-	glPopMatrix();
-	orthogonalEnd();
-}
-
-void drawQuad(int textureId)
-{
-	if (textureId != -1)
-	{
-		glEnable(GL_TEXTURE_2D);
-		glBindTexture(GL_TEXTURE_2D, textureId);
-	}
-	else
-		glDisable(GL_LIGHTING);
-	glBegin(GL_QUADS);
-	glTexCoord2f(0.0f, 0.0f);
-	glVertex3f(0.0f, 0.0f, 0.0f);
-	glTexCoord2f(1.0f, 0.0f);
-	glVertex3f(1.0f, 0.0f, 0.0f);
-	glTexCoord2f(1.0f, 1.0f);
-	glVertex3f(1.0f, 1.0f, 0.0f);
-	glTexCoord2f(0.0f, 1.0f);
-	glVertex3f(0.0f , 1.0f, 0.0f);
-	glEnd();
-	if (textureId != -1)
-		glDisable(GL_TEXTURE_2D);
-	else
-		glEnable(GL_LIGHTING);
 }
 
 // visualizza i menu
@@ -1200,7 +1319,6 @@ void displayMenu(void)
 			selectBoxCoord.z = 0.1f;
 			gap = -0.0333f;
 			entries = listLenght;
-			//selectBoxPlace = 0;
 			glEnable(GL_BLEND);
 			glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 			glColor4f(1.0f, 0.0f, 0.0f, 0.30f);
@@ -1438,7 +1556,7 @@ void display(void)
 
 void specialKeys(int key, int x, int y)
 {
-	if (showMenu && menuAction == -1)
+	if (showMenu && menuAction == -1) // menu principale
 	{
 		switch (key)
 		{
@@ -1453,7 +1571,7 @@ void specialKeys(int key, int x, int y)
 				break;
 		}
 	}
-	else if (showMenu && menuAction == 1)
+	else if (showMenu && menuAction == 1) // menu play level
 	{
 		switch (key)
 		{
@@ -1472,7 +1590,7 @@ void specialKeys(int key, int x, int y)
 				break;
 		}
 	}
-	else if (showMenu && menuAction == 2)
+	else if (showMenu && menuAction == 2) // menu credits
 	{
 		switch (key)
 		{
@@ -1517,7 +1635,10 @@ void keyboard(unsigned char key, int x, int y)
 				selectBoxPlace = 1;
 				break;
 			case 13: // CR
-					 // TODO: loadGame
+				loadGame(levelFileName[selectBoxPlace]);
+				menuAction = -1;
+				selectBoxPlace = 0;
+				showMenu = 0;
 				break;
 
 			default:
