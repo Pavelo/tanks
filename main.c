@@ -931,6 +931,7 @@ void initMenu(void)
 	loadTGA("texture/menu_main.tga", 1000);
 	loadTGA("texture/menu_levels.tga", 1001);
 	loadTGA("texture/menu_credits.tga", 1002);
+	loadTGA("texture/menu_loading.tga", 1003);
 	
 	DIR* directory = opendir("levels");
 	int i;
@@ -1310,8 +1311,11 @@ void displayMenu(void)
 			break;
 			
 		case 0: // new game
-			showMenu = 0;
+			drawQuad(1003);
+			loadGame(levelFileName[0]);
 			menuAction = -1;
+			selectBoxPlace = 0;
+			showMenu = 0;
 			break;
 			
 		case 1: // play level
@@ -1613,7 +1617,7 @@ void specialKeys(int key, int x, int y)
 //lettura input
 void keyboard(unsigned char key, int x, int y)
 {
-	if (showMenu && menuAction == -1)
+	if (showMenu && menuAction == -1) // menu principale
 	{
 		switch (key)
 		{
@@ -1632,7 +1636,20 @@ void keyboard(unsigned char key, int x, int y)
 				break;
 		}
 	}
-	else if (showMenu && menuAction == 1)
+//	else if (showMenu && menuAction == 0) // new game
+//	{
+//		switch (key) {
+//			case 13:
+//				loadGame("arena.lvl");
+//				menuAction = -1;
+//				selectBoxPlace = 3;
+//				showMenu = 0;
+//				break;
+//			default:
+//				break;
+//		}
+//	}
+	else if (showMenu && menuAction == 1) // play level
 	{
 		switch (key) {
 			case 27: // esc
@@ -1650,24 +1667,13 @@ void keyboard(unsigned char key, int x, int y)
 				break;
 		}
 	}
-	else if (showMenu && menuAction == 2)
+	else if (showMenu && menuAction == 2) // credits
 	{
 		switch (key)
 		{
-			case 27: // esc
-				menuAction = -1;
-				selectBoxPlace = 2;
-				break;
-			case ' ':
-				menuAction = -1;
-				selectBoxPlace = 2;
-				break;
-			case 13: // CR (carriage return - corrisponde a INVIO su mac)
-				menuAction = -1;
-				selectBoxPlace = 2;
-				break;
-				
 			default:
+				menuAction = -1;
+				selectBoxPlace = 2;
 				break;
 		}
 	}
