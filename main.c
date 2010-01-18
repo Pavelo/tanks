@@ -124,6 +124,7 @@ int turretView = 0;
 int fixedView  = 0;
 map* levelMap;
 obj* objTank[20];
+float enemiesDefeated;
 //stampe a video
 char stampe[80];
 char stampe2[80];
@@ -148,6 +149,7 @@ int selectBoxPlace = 0;
 int entries = 4;
 char levelFileName[10][32];
 int listLenght;
+int gameLoaded = 0;
 
 //FUNZIONI
 
@@ -1269,6 +1271,9 @@ void loadGame(char* levelName)
     	
     	tanks[i].collision = 0;
     	tanks[i].collisionAngle = 0.0f;
+		turretView = 0;
+
+		gameLoaded = 1;
     }
 }
 
@@ -1622,7 +1627,8 @@ void keyboard(unsigned char key, int x, int y)
 		switch (key)
 		{
 			case 27: // esc
-				showMenu = showMenu ? 0 : 1;
+				if (gameLoaded)
+					showMenu = showMenu ? 0 : 1;
 				break;
 			case 'm':
 				exit(0);
@@ -1636,19 +1642,6 @@ void keyboard(unsigned char key, int x, int y)
 				break;
 		}
 	}
-//	else if (showMenu && menuAction == 0) // new game
-//	{
-//		switch (key) {
-//			case 13:
-//				loadGame("arena.lvl");
-//				menuAction = -1;
-//				selectBoxPlace = 3;
-//				showMenu = 0;
-//				break;
-//			default:
-//				break;
-//		}
-//	}
 	else if (showMenu && menuAction == 1) // play level
 	{
 		switch (key) {
@@ -1766,237 +1759,261 @@ void idle(void)
 	}
 	else
 	{
-	levelMap->pwupRot = fmodf(levelMap->pwupRot + 3.0f, 360.0f);
-	
-	int i, x, y;
-	
-	for(i=0;i<levelMap->enemies+1;i++)
-    {
-		// normalizzazione degli angoli tra 0¡ e 360¡ per evitare overflow
-//		tanks[0].rot = fmodf(tanks[0].rot, 180.0f);
-//		tanks[i].userTurret.rot = fmodf(tanks[i].userTurret.rot, 180.0f);
+		levelMap->pwupRot = fmodf(levelMap->pwupRot + 3.0f, 360.0f);
 		
-        if(i!=0)
-        {
-            //intelligenza artificiale nemici
-            //azzera valori
-            tanks[i].enginePower = 0.0f;
-            planAction(&tanks[i]);
-        }
-        //calcolo della fisica dei carri armati
-        //calcolo della forza di attrito [Fk = fC * g * m]
-        tanks[i].frictionForce = 9.8f * frictionCoeff * tanks[i].mass;
-        tanks[i].speed = tanks[i].v[0]*sin(tanks[i].rot*M_PI/180.0f) + tanks[i].v[2]*cos(tanks[i].rot*M_PI/180.0f);
-        if((tanks[i].speed>=-0.1f) && (tanks[i].speed<=0.1f) && (tanks[i].enginePower<=0.0f))
-        {
-			tanks[i].frictionForce = 0.0f;
-        }
-        else if(tanks[i].speed<-0.1)
-        {
+		int i, x, y;
+		
+		for(i=0;i<levelMap->enemies+1;i++)
+		{
+			// normalizzazione degli angoli tra 0¡ e 360¡ per evitare overflow
+			//		tanks[0].rot = fmodf(tanks[0].rot, 180.0f);
+			//		tanks[i].userTurret.rot = fmodf(tanks[i].userTurret.rot, 180.0f);
+			
+			if(i!=0)
+			{
+				//intelligenza artificiale nemici
+				//azzera valori
+				tanks[i].enginePower = 0.0f;
+				planAction(&tanks[i]);
+			}
+			//calcolo della fisica dei carri armati
+			//calcolo della forza di attrito [Fk = fC * g * m]
 			tanks[i].frictionForce = 9.8f * frictionCoeff * tanks[i].mass;
-        }
-        else
-        {
-			tanks[i].frictionForce = (9.8f * frictionCoeff * tanks[i].mass)* -1.0f;
-        }
+			tanks[i].speed = tanks[i].v[0]*sin(tanks[i].rot*M_PI/180.0f) + tanks[i].v[2]*cos(tanks[i].rot*M_PI/180.0f);
+			if((tanks[i].speed>=-0.1f) && (tanks[i].speed<=0.1f) && (tanks[i].enginePower<=0.0f))
+			{
+				tanks[i].frictionForce = 0.0f;
+			}
+			else if(tanks[i].speed<-0.1)
+			{
+				tanks[i].frictionForce = 9.8f * frictionCoeff * tanks[i].mass;
+			}
+			else
+			{
+				tanks[i].frictionForce = (9.8f * frictionCoeff * tanks[i].mass)* -1.0f;
+			}
+			
+			//ferma il movimento continuo, simula attrito statico
+			if((tanks[i].speed>=-0.1f) && (tanks[i].speed<=0.1f))
+			{
+				tanks[i].v[0]=0.0f;
+				tanks[i].v[2]=0.0f;
+			}
+			
+			//calcolo dell'accelerazione derivata dalle forze in gioco(motore e attrito) e 
+			//inversamente proporzionale alla massa del carro armato [a = (Fe - Fk) / m]
+			tanks[i].a[0] = ((tanks[i].enginePower - tanks[i].frictionForce)*sin(tanks[i].rot*M_PI/180.0f)/tanks[i].mass)* -1.0f;
+			tanks[i].a[2] = ((tanks[i].enginePower - tanks[i].frictionForce)*cos(tanks[i].rot*M_PI/180.0f)/tanks[i].mass)* -1.0f;
+			tanks[i].throttle = ((tanks[i].enginePower - tanks[i].frictionForce)/tanks[i].mass)* -1.0f;
+			
+			// S = So + v*t
+			//tanks[i].v[2] += tanks[i].throttle * deltaT;
+			//tanks[i].pos[2] += tanks[i].v[2] * deltaT;
+			
+			// S = So + vo*t + a*t*t*0.5
+			//calcolo delle equazioni del moto
+			tanks[i].pos[0] += tanks[i].v[0]*deltaT + tanks[i].a[0]*deltaT*deltaT*0.5f;
+			tanks[i].v[0] += tanks[i].a[0] * deltaT; //velocità finale
+			tanks[i].pos[2] += tanks[i].v[2]*deltaT + tanks[i].a[2]*deltaT*deltaT*0.5f;
+			tanks[i].v[2] += tanks[i].a[2] * deltaT; //velocità finale
+			
+			tanks[i].enginePower = 0.0f;
+			
+			// COLLISIONI
+			
+			// riposiziona la bounding box di ogni carro armato su di esso
+			glPushMatrix();
+			glLoadIdentity();
+			glTranslatef(tanks[i].pos[0], 0.5f, tanks[i].pos[2]);
+			glRotatef(tanks[i].rot, 0.0f, 1.0f, 0.0f);
+			glGetFloatv(GL_MODELVIEW_MATRIX, mat);
+			levelMap->cm.tanksBB[i] = placeOrientedBoundingBox(&tanks[i].boundingVol, mat);
+			glPopMatrix();
+			
+			// gestistisce le collisioni con i confini della mappa
+			borderCollision(&tanks[i], i);
+			// gestisce le collisioni con gli ostacoli statici e i powerup
+			for (y=0; y < levelMap->depth; y++)
+			{
+				for (x=0; x < levelMap->width; x++)
+				{
+					staticCollision(&tanks[i], i, x, y);
+					powerupCollision(&tanks[i], i, x, y);
+				}
+			}
+			// gestisce le collisioni tra i carri armati
+			for (x=0; x < levelMap->enemies; x++)
+				tanksCollision(&tanks[i], &tanks[(int)fmodf(i+x+1, levelMap->enemies+1)]);
+			
+			tanks[i].lastPos.x = tanks[i].pos[0];
+			tanks[i].lastPos.z = tanks[i].pos[2];
+			tanks[i].lastRot = tanks[i].rot;
+			
+			//FISICA PALLOTTOLE
+			bullets *p;
+			//elimina dalla struttura la radice con posizione Y negativa
+			//radice diventa primo nodo con Y positiva o NULL se non presente
+			float bulletY = 0.0f;
+			while(tanks[i].bulletRoot!=NULL && tanks[i].bulletRoot->bullet.pos[1] + tanks[i].pos[1] + tanks[i].userTurret.pos[1]<0.0f)
+				tanks[i].bulletRoot = tanks[i].bulletRoot->next;
+			//scorre tutta la struttura di pallottole
+			for(p=tanks[i].bulletRoot; p!=NULL; p=p->next)
+			{
+				//bulletY = p->next->bullet.pos[1] + tanks[i].pos[1] + tanks[i].userTurret.pos[1];
+				//toglie dalla struttura le pallottole con Y negativa
+				while(p->next!=NULL && (p->next->bullet.pos[1]+tanks[i].pos[1]+tanks[i].userTurret.pos[1])<0.0f)
+					p->next = p->next->next;
+				//calcola la fisica delle pallottole
+				int j = 0;
+				for(j=0;j<levelMap->enemies+1;j++)
+				{
+					if(j!=i && bulletTankCollision(&p->bullet, &tanks[j]))
+					{
+						p->bullet.v[0] = 0.0f;
+						p->bullet.v[1] = 0.0f;
+						p->bullet.v[2] = 0.0f;
+						p->bullet.a[1] = 0.0f;
+						p->bullet.hit = j;
+					}
+				}
+				if (p->bullet.hit >= 0)
+				{
+					p->lifetime += (float)deltaT;
+					p->bullet.scale.x += 5.0f;
+					p->bullet.scale.y += 0.5f;
+					p->bullet.scale.z += 5.0f;
+					if (p->bullet.scale.x == 6.0f)
+						tanks[p->bullet.hit].life -= 10.0f * tanks[i].weaponPower;
+					//				sprintf(printScreen[6],"COLPITO carrarmato %i ! Vita rimasta: %f",p->bullet.hit,tanks[p->bullet.hit].life);
+				}
+				if (bulletObsCollision(&p->bullet))
+				{
+					p->lifetime += (float)deltaT;
+					p->bullet.scale.x += 5.0f;
+					p->bullet.scale.y += 0.5f;
+					p->bullet.scale.z += 5.0f;
+				}
+				else
+				{
+					p->bullet.pos[0] -= p->bullet.v[0]*deltaT;
+					//p->bullet.v[0] += p->bullet.a[0]*deltaT;
+					//p->bullet.pos[1] += p->bullet.v[1]*deltaT;
+					p->bullet.pos[1] += p->bullet.v[1]*deltaT + 0.5*p->bullet.a[1]*deltaT*deltaT;
+					p->bullet.v[1] += p->bullet.a[1]*deltaT;
+					p->bullet.pos[2] -= p->bullet.v[2]*deltaT;
+					//p->bullet.v[2] += p->bullet.a[2]*deltaT;
+				}
+			}
+			
+			//tempo di ricarica per le pallottole
+			if(tanks[i].rechargeTime<tanks[i].rechargeNeeded && tanks[i].ammo>0)
+				tanks[i].rechargeTime += deltaT;
+			
+			//settings per le animazioni dei cingoli
+			if(fabs(tanks[i].speed)<6.0f) 
+			{
+				tanks[i].animationL += 1*fabs(tanks[i].speed)*0.5;
+				tanks[i].animationR += 1*fabs(tanks[i].speed)*0.5;
+			}
+			else
+			{
+				tanks[i].animationL += 3;
+				tanks[i].animationR += 3;
+			}
+			
+			//morte carrarmato nemico
+			if (i!=0 && tanks[i].life <= 0.0f && tanks[i].pos[1] > -5.0f)
+			{
+				tanks[i].pos[1] -= 0.1f;
+			}
+		}//END FOR
 		
-        //ferma il movimento continuo, simula attrito statico
-        if((tanks[i].speed>=-0.1f) && (tanks[i].speed<=0.1f))
-        {
-			tanks[i].v[0]=0.0f;
-			tanks[i].v[2]=0.0f;
-        }
+		enemiesDefeated = 0;
+		for (i=1; i <= levelMap->enemies; i++)
+		{
+			if (tanks[i].life <= 0.0f)
+				enemiesDefeated++;
+		}
 		
-        //calcolo dell'accelerazione derivata dalle forze in gioco(motore e attrito) e 
-        //inversamente proporzionale alla massa del carro armato [a = (Fe - Fk) / m]
-        tanks[i].a[0] = ((tanks[i].enginePower - tanks[i].frictionForce)*sin(tanks[i].rot*M_PI/180.0f)/tanks[i].mass)* -1.0f;
-        tanks[i].a[2] = ((tanks[i].enginePower - tanks[i].frictionForce)*cos(tanks[i].rot*M_PI/180.0f)/tanks[i].mass)* -1.0f;
-        tanks[i].throttle = ((tanks[i].enginePower - tanks[i].frictionForce)/tanks[i].mass)* -1.0f;
+		//vittoria giocatore
+		if (enemiesDefeated == levelMap->enemies)
+		{
+			menuAction = -1;
+			selectBoxPlace = 2;
+			showMenu = 1;
+		}
 		
-        // S = So + v*t
-    	//tanks[i].v[2] += tanks[i].throttle * deltaT;
-    	//tanks[i].pos[2] += tanks[i].v[2] * deltaT;
+		//sconfitta giocatore
+		if (tanks[0].life <= 0.0f)
+		{
+			//game over
+			menuAction = -1;
+			selectBoxPlace = 0;
+			showMenu = 1;
+		}
 		
-    	// S = So + vo*t + a*t*t*0.5
-    	//calcolo delle equazioni del moto
-    	tanks[i].pos[0] += tanks[i].v[0]*deltaT + tanks[i].a[0]*deltaT*deltaT*0.5f;
-    	tanks[i].v[0] += tanks[i].a[0] * deltaT; //velocità finale
-    	tanks[i].pos[2] += tanks[i].v[2]*deltaT + tanks[i].a[2]*deltaT*deltaT*0.5f;
-    	tanks[i].v[2] += tanks[i].a[2] * deltaT; //velocità finale
+		//ricarica
+		//	int x;
+		float yf = tanks[0].rechargeNeeded*0.1f;
+		float yf2 = 0.0f;
+		for(x=0;x<10;x++)
+		{
+			yf2 += yf;
+			if(yf2<=tanks[0].rechargeTime)
+				rech[(int)x]='O';
+			else
+				rech[(int)x]='-';
+		}
 		
-    	tanks[i].enginePower = 0.0f;
-        
-		// COLLISIONI
 		
-		// riposiziona la bounding box di ogni carro armato su di esso
-		glPushMatrix();
-		glLoadIdentity();
-		glTranslatef(tanks[i].pos[0], 0.5f, tanks[i].pos[2]);
-		glRotatef(tanks[i].rot, 0.0f, 1.0f, 0.0f);
-		glGetFloatv(GL_MODELVIEW_MATRIX, mat);
-		levelMap->cm.tanksBB[i] = placeOrientedBoundingBox(&tanks[i].boundingVol, mat);
-		glPopMatrix();
-
-		// gestistisce le collisioni con i confini della mappa
-		borderCollision(&tanks[i], i);
-		// gestisce le collisioni con gli ostacoli statici e i powerup
+		//mirino
+		if(turretView==1)
+		{
+			float cannonSpeed = 35.0f;
+			float initialHigh = tanks[0].pos[1]+tanks[0].userTurret.pos[1];
+			initialHigh += tanks[0].userTurret.tankCannon.length*sin(tanks[0].userTurret.tankCannon.rot*M_PI/180.0f);;
+			float initialVel0 = cannonSpeed*cos(radians(tanks[0].userTurret.tankCannon.rot))*sin(M_PI/180.0f*(tanks[0].rot+tanks[0].userTurret.rot));
+			float initialVel1 = cannonSpeed*sin(radians(tanks[0].userTurret.tankCannon.rot));
+			float initialVel2 = cannonSpeed*cos(radians(tanks[0].userTurret.tankCannon.rot))*cos(M_PI/180.0f*(tanks[0].rot+tanks[0].userTurret.rot));
+			float timeAtFloor = (-initialVel1 - sqrt(initialVel1*initialVel1 + 2.0f*9.81*initialHigh))/-9.81f;
+			xBullet=-initialVel0*timeAtFloor;
+			yBullet=-initialVel2*timeAtFloor;
+		}
+		
+		
+		// Timer powerup
 		for (y=0; y < levelMap->depth; y++)
 		{
 			for (x=0; x < levelMap->width; x++)
 			{
-				staticCollision(&tanks[i], i, x, y);
-				powerupCollision(&tanks[i], i, x, y);
-			}
-		}
-		// gestisce le collisioni tra i carri armati
-		for (x=0; x < levelMap->enemies; x++)
-			tanksCollision(&tanks[i], &tanks[(int)fmodf(i+x+1, levelMap->enemies+1)]);
-		
-		tanks[i].lastPos.x = tanks[i].pos[0];
-		tanks[i].lastPos.z = tanks[i].pos[2];
-		tanks[i].lastRot = tanks[i].rot;
-		
-    	//FISICA PALLOTTOLE
-    	bullets *p;
-    	//elimina dalla struttura la radice con posizione Y negativa
-    	//radice diventa primo nodo con Y positiva o NULL se non presente
-    	float bulletY = 0.0f;
-    	while(tanks[i].bulletRoot!=NULL && tanks[i].bulletRoot->bullet.pos[1] + tanks[i].pos[1] + tanks[i].userTurret.pos[1]<0.0f)
-			tanks[i].bulletRoot = tanks[i].bulletRoot->next;
-        //scorre tutta la struttura di pallottole
-    	for(p=tanks[i].bulletRoot; p!=NULL; p=p->next)
-    	{
-            //bulletY = p->next->bullet.pos[1] + tanks[i].pos[1] + tanks[i].userTurret.pos[1];
-            //toglie dalla struttura le pallottole con Y negativa
-            while(p->next!=NULL && (p->next->bullet.pos[1]+tanks[i].pos[1]+tanks[i].userTurret.pos[1])<0.0f)
-                p->next = p->next->next;
-            //calcola la fisica delle pallottole
-            int j = 0;
-            for(j=0;j<levelMap->enemies+1;j++)
-            {
-				if(j!=i && bulletTankCollision(&p->bullet, &tanks[j]))
+				if (!levelMap->pwup[x][y].active && levelMap->pwup[x][y].placed)
 				{
-					p->bullet.v[0] = 0.0f;
-					p->bullet.v[1] = 0.0f;
-					p->bullet.v[2] = 0.0f;
-					p->bullet.a[1] = 0.0f;
-					p->bullet.hit = j;
-				}
-            }
-			if (p->bullet.hit >= 0)
-			{
-				p->lifetime += (float)deltaT;
-				p->bullet.scale.x += 5.0f;
-				p->bullet.scale.y += 0.5f;
-				p->bullet.scale.z += 5.0f;
-				if (p->bullet.scale.x == 6.0f)
-					tanks[p->bullet.hit].life -= 10.0f * tanks[i].weaponPower;
-//				sprintf(printScreen[6],"COLPITO carrarmato %i ! Vita rimasta: %f",p->bullet.hit,tanks[p->bullet.hit].life);
-			}
-			if (bulletObsCollision(&p->bullet))
-			{
-				p->lifetime += (float)deltaT;
-				p->bullet.scale.x += 5.0f;
-				p->bullet.scale.y += 0.5f;
-				p->bullet.scale.z += 5.0f;
-			}
-			else
-			{
-				p->bullet.pos[0] -= p->bullet.v[0]*deltaT;
-				//p->bullet.v[0] += p->bullet.a[0]*deltaT;
-				//p->bullet.pos[1] += p->bullet.v[1]*deltaT;
-				p->bullet.pos[1] += p->bullet.v[1]*deltaT + 0.5*p->bullet.a[1]*deltaT*deltaT;
-				p->bullet.v[1] += p->bullet.a[1]*deltaT;
-				p->bullet.pos[2] -= p->bullet.v[2]*deltaT;
-				//p->bullet.v[2] += p->bullet.a[2]*deltaT;
-            }
-        }
-		
-        //tempo di ricarica per le pallottole
-        if(tanks[i].rechargeTime<tanks[i].rechargeNeeded && tanks[i].ammo>0)
-            tanks[i].rechargeTime += deltaT;
-		
-    	//settings per le animazioni dei cingoli
-    	if(fabs(tanks[i].speed)<6.0f) 
-        {
-            tanks[i].animationL += 1*fabs(tanks[i].speed)*0.5;
-            tanks[i].animationR += 1*fabs(tanks[i].speed)*0.5;
-        }
-    	else
-    	{
-    	    tanks[i].animationL += 3;
-    	    tanks[i].animationR += 3;
-        }
-		
-		//morte carrarmato nemico
-		if (i!=0 && tanks[i].life <= 0.0f && tanks[i].pos[1] > -5.0f)
-		{
-			tanks[i].pos[1] -= 0.1f;
-		}
-    }//END FOR
-	
-	//ricarica
-//	int x;
-	float yf = tanks[0].rechargeNeeded*0.1f;
-	float yf2 = 0.0f;
-	for(x=0;x<10;x++)
-	{
-		yf2 += yf;
-		if(yf2<=tanks[0].rechargeTime)
-			rech[(int)x]='O';
-		else
-			rech[(int)x]='-';
-	}
-	
-	
-    //mirino
-    if(turretView==1)
-    {
-        float cannonSpeed = 35.0f;
-        float initialHigh = tanks[0].pos[1]+tanks[0].userTurret.pos[1];
-        initialHigh += tanks[0].userTurret.tankCannon.length*sin(tanks[0].userTurret.tankCannon.rot*M_PI/180.0f);;
-        float initialVel0 = cannonSpeed*cos(radians(tanks[0].userTurret.tankCannon.rot))*sin(M_PI/180.0f*(tanks[0].rot+tanks[0].userTurret.rot));
-        float initialVel1 = cannonSpeed*sin(radians(tanks[0].userTurret.tankCannon.rot));
-        float initialVel2 = cannonSpeed*cos(radians(tanks[0].userTurret.tankCannon.rot))*cos(M_PI/180.0f*(tanks[0].rot+tanks[0].userTurret.rot));
-        float timeAtFloor = (-initialVel1 - sqrt(initialVel1*initialVel1 + 2.0f*9.81*initialHigh))/-9.81f;
-        xBullet=-initialVel0*timeAtFloor;
-        yBullet=-initialVel2*timeAtFloor;
-    }
-
-	
-    // Timer powerup
-	for (y=0; y < levelMap->depth; y++)
-	{
-		for (x=0; x < levelMap->width; x++)
-		{
-			if (!levelMap->pwup[x][y].active && levelMap->pwup[x][y].placed)
-			{
-				levelMap->pwup[x][y].timer -= (float)deltaT;
-				if (levelMap->pwup[x][y].timer < 0)
-				{
-					levelMap->pwup[x][y].active = 1;
-					if (levelMap->pwup[x][y].type == '4')
+					levelMap->pwup[x][y].timer -= (float)deltaT;
+					if (levelMap->pwup[x][y].timer < 0)
 					{
-						for (i=0; i<levelMap->enemies+1; i++) {
-							tanks[i].weaponPower = 1;
+						levelMap->pwup[x][y].active = 1;
+						if (levelMap->pwup[x][y].type == '4')
+						{
+							for (i=0; i<levelMap->enemies+1; i++) {
+								tanks[i].weaponPower = 1;
+							}
 						}
 					}
 				}
 			}
 		}
-	}
-	
-	//HUD
-	if (tanks[0].weaponPower == 4)
-		sprintf(printScreen[2], "4x QUAD-DAMAGE 4x");
-	else if (tanks[0].weaponPower == 1)
-		sprintf(printScreen[2], "");
-	
-	sprintf(stampe,"Shoot Recharge |%s|",rech);
-	sprintf(stampe2,"Ammo |%i|",tanks[0].ammo);
-//    sprintf(stampe2,"Animation |%i|",tanks[0].animationL);
-	sprintf(stampe3,"Speed |%i|",(int)fabs(tanks[0].speed));
-	sprintf(printScreen[0], "HP |%d|", (int)tanks[0].life);
+		
+		//HUD
+		if (tanks[0].weaponPower == 4)
+			sprintf(printScreen[2], "4x QUAD-DAMAGE 4x");
+		else if (tanks[0].weaponPower == 1)
+			sprintf(printScreen[2], "");
+		
+		sprintf(stampe,"Shoot Recharge |%s|",rech);
+		sprintf(stampe2,"Ammo |%i|",tanks[0].ammo);
+		//    sprintf(stampe2,"Animation |%i|",tanks[0].animationL);
+		sprintf(stampe3,"Speed |%i|",(int)fabs(tanks[0].speed));
+		sprintf(printScreen[0], "HP |%d|", (int)tanks[0].life);
 	}
 	glutPostRedisplay();
 }
