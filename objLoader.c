@@ -181,7 +181,6 @@ obj* loadOBJ(char* path)
 	
 	fclose(fp);
 	
-	
 	return model;
 }
 

@@ -9,6 +9,7 @@ struct _powerup
 	obj* model;
 	char type;
 	int active;
+	int placed;
 	float timer;
 };
 typedef struct _powerup powerup;

@@ -203,7 +203,7 @@ void staticCollision(tank* t, int i, int x, int y)
 // Controlla se  avvenuta una collisione con qualche powerup
 void powerupCollision(tank* t, int i, int x, int y)
 {
-	if ( (sqrtf( (t->pos[0] - x*DIM_TILE-levelMap->posX) * (t->pos[0] - x*DIM_TILE-levelMap->posX) + (t->pos[2] - y*DIM_TILE-levelMap->posY) * (t->pos[2] - y*DIM_TILE-levelMap->posY)) < (DIM_TILE*0.5f)) && levelMap->pwup[x][y].active && levelMap->pwup[x][y].model != NULL )
+	if ( (sqrtf( (t->pos[0] - x*DIM_TILE-levelMap->posX) * (t->pos[0] - x*DIM_TILE-levelMap->posX) + (t->pos[2] - y*DIM_TILE-levelMap->posY) * (t->pos[2] - y*DIM_TILE-levelMap->posY)) < (DIM_TILE*0.5f)) && levelMap->pwup[x][y].active && levelMap->pwup[x][y].placed)
 	{
 		levelMap->pwup[x][y].active = 0;
 		levelMap->pwup[x][y].timer = PWUP_RESPAWN_TIME;
@@ -928,9 +928,9 @@ void reshape ( int w, int h)
 
 void initMenu(void)
 {
-	loadTGA("texture/menu_main.tga", 100);
-	loadTGA("texture/menu_levels.tga", 101);
-	loadTGA("texture/menu_credits.tga", 102);
+	loadTGA("texture/menu_main.tga", 1000);
+	loadTGA("texture/menu_levels.tga", 1001);
+	loadTGA("texture/menu_credits.tga", 1002);
 	
 	DIR* directory = opendir("levels");
 	int i;
@@ -1119,6 +1119,11 @@ void printLvlList(float x, float y)
 
 void drawQuad(int textureId)
 {
+	float rgb[] = {1.0f, 1.0f, 1.0f};
+	glMaterialfv(GL_FRONT, GL_AMBIENT, rgb);
+	glMaterialfv(GL_FRONT, GL_DIFFUSE, rgb);
+	glMaterialfv(GL_FRONT, GL_SPECULAR, rgb);
+	glMaterialf(GL_FRONT, GL_SHININESS, 0.0f);
 	if (textureId != -1)
 	{
 		glEnable(GL_TEXTURE_2D);
@@ -1285,7 +1290,7 @@ void displayMenu(void)
 	{
 		case -1:
 			// sfondo
-			drawQuad(100);
+			drawQuad(1000);
 			
 			//rettangolo di selezione
 			entries = 4;
@@ -1311,7 +1316,7 @@ void displayMenu(void)
 			
 		case 1: // play level
 			printLvlList(WIDTH/2, 373);
-			drawQuad(101);
+			drawQuad(1001);
 			
 			//rettangolo di selezione
 			selectBoxCoord.x = 0.480f;
@@ -1331,7 +1336,7 @@ void displayMenu(void)
 			break;
 		
 		case 2: // credits
-			drawQuad(102);
+			drawQuad(1002);
 			break;
 
 		case 3:
@@ -1386,7 +1391,7 @@ void displayGame(void)
 				  tanks[0].pos[0], 3.0f,tanks[0].pos[2],//At
 				  0.0f, 1.0f, 0.0f);//Up
     }
-    else //turret view
+    else if (turretView) //turret view
     {
 		gluLookAt(tanks[0].pos[0] + 1.0f*sin((tanks[0].rot+tanks[0].userTurret.rot)*M_PI/180.0f),//Eye x
 				  2.5f,//Eye y
@@ -1958,7 +1963,7 @@ void idle(void)
 	{
 		for (x=0; x < levelMap->width; x++)
 		{
-			if (!levelMap->pwup[x][y].active && levelMap->pwup[x][y].model != NULL)
+			if (!levelMap->pwup[x][y].active && levelMap->pwup[x][y].placed)
 			{
 				levelMap->pwup[x][y].timer -= (float)deltaT;
 				if (levelMap->pwup[x][y].timer < 0)

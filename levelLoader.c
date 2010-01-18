@@ -54,39 +54,48 @@ map* loadLevel(char* path)
 						case '.':
 							myMap->obs[x][y].model = obs[0];
 							myMap->obs[x][y].type = 0;
+							myMap->pwup[x][y].placed = 0;
 							break;
 						case 'Y':
 							myMap->obs[x][y].model = obs[1];
 							myMap->obs[x][y].type = 1;
+							myMap->pwup[x][y].placed = 0;
 							break;
 						case 'I':
 							myMap->obs[x][y].model = obs[2];
 							myMap->obs[x][y].type = 1;
+							myMap->pwup[x][y].placed = 0;
 							break;
 						case '=':
 							myMap->obs[x][y].model = obs[3];
 							myMap->obs[x][y].type = 1;
+							myMap->pwup[x][y].placed = 0;
 							break;
 						case 'n':
 							myMap->obs[x][y].model = obs[4];
 							myMap->obs[x][y].type = 1;
+							myMap->pwup[x][y].placed = 0;
 							break;
 						case 'u':
 							myMap->obs[x][y].model = obs[5];
 							myMap->obs[x][y].type = 1;
+							myMap->pwup[x][y].placed = 0;
 							break;
 						case '(':
 							myMap->obs[x][y].model = obs[6];
 							myMap->obs[x][y].type = 1;
+							myMap->pwup[x][y].placed = 0;
 							break;
 						case ')':
 							myMap->obs[x][y].model = obs[7];
 							myMap->obs[x][y].type = 1;
+							myMap->pwup[x][y].placed = 0;
 							break;
 						case 'p':
 							myMap->obs[x][y].model = obs[0];
 							myMap->pwup[x][y].model = pwup[0];
 							myMap->pwup[x][y].type = line[x+2];
+							myMap->pwup[x][y].placed = 1;
 							myMap->pwup[x][y].active = 1;
 							break;
 						case 'h':
@@ -94,6 +103,7 @@ map* loadLevel(char* path)
 							myMap->obs[x][y].type = 0;
 							myMap->pwup[x][y].model = pwup[1];
 							myMap->pwup[x][y].type = line[x+2];
+							myMap->pwup[x][y].placed = 1;
 							myMap->pwup[x][y].active = 1;
 							break;
 						case '4':
@@ -101,13 +111,14 @@ map* loadLevel(char* path)
 							myMap->obs[x][y].type = 0;
 							myMap->pwup[x][y].model = pwup[2];
 							myMap->pwup[x][y].type = line[x+2];
+							myMap->pwup[x][y].placed = 1;
 							myMap->pwup[x][y].active = 1;
 							break;
 							
 						default:
 							myMap->obs[x][y].model = obs[0];
 							myMap->obs[x][y].type = 0;
-							myMap->pwup[x][y].active = 0;
+							myMap->pwup[x][y].placed = 0;
 							break;
 					}
 					x++;
@@ -177,28 +188,27 @@ void drawLevel(map* myMap)
 {
 	int i, x, y;
 	
+	glEnable(GL_RESCALE_NORMAL);
 	glPushMatrix();
 		glPushMatrix(); // disegno il muro
 			glScalef(myMap->width * DIM_TILE, 155.0f, myMap->depth * DIM_TILE);
-			glEnable(GL_RESCALE_NORMAL);
 			drawOBJ(myMap->background[0]);
 		glPopMatrix();
 		glPushMatrix(); // disegno le montagne
 			glScalef(myMap->width * DIM_TILE, fmin(myMap->width * DIM_TILE, myMap->depth *DIM_TILE), myMap->depth * DIM_TILE);
-			glEnable(GL_RESCALE_NORMAL);
 			drawOBJ(myMap->background[1]);
 		glPopMatrix();
 		// disegno il terreno, gli ostacoli e i powerup
 		glTranslatef(myMap->posX, 0.0f, myMap->posY);
-		for (y=0; y < myMap->depth; y++)
+		for (x=0; x < myMap->width; x++)
 		{
-			for (x=0; x < myMap->width; x++)
+			for (y=0; y < myMap->depth; y++)
 			{
 				glPushMatrix();
 					glTranslatef(x * DIM_TILE, 0.0f, y * DIM_TILE);
 					glScalef(DIM_TILE, DIM_TILE, DIM_TILE);
 					drawOBJ(myMap->obs[x][y].model); // disegno gli ostacoli o il terreno
-					if (myMap->pwup[x][y].model != NULL && myMap->pwup[x][y].active) // disegno i powerup
+					if (myMap->pwup[x][y].placed && myMap->pwup[x][y].active) // disegno i powerup
 					{
 						glRotatef(myMap->pwupRot, 0.0f, 1.0f, 0.0f);
 						glScalef(0.5f, 0.5f, 0.5f);
