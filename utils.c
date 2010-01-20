@@ -84,10 +84,26 @@ float normalize180(float angle)
          angle += 360.0f;
       return angle;
 }
+float normalizeMPI(float angleR)
+{
+	if(angleR>M_PI)
+		angleR -= 2.0f*M_PI;
+	else if(angleR<-M_PI)
+		angleR += 2.0f*M_PI;
+	return angleR;
+}
 float getSign(float f)
 {
       if(f<0.0f)
       return -1.0f;
       else
       return 1.0f;
+}
+float radians(float degrees)
+{
+	return degrees*M_PI/180.0f;
+}
+float degrees(float radians)
+{
+	return radians/M_PI*180.0f;
 }

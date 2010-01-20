@@ -3,6 +3,9 @@
 
 # Questo è un commento
 
+# Tipologia di livello (1=deserto 2=urbano)
+l 1
+
 # Numero di nemici (massimo 9)
 e 3
 

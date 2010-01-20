@@ -21,8 +21,6 @@
 #define WIDTH 800
 #define HEIGHT 600
 #define LIFETIME 0.3f
-#define radians(degrees) degrees*M_PI/180.0f
-#define degrees(radians) radians*180.0f/M_PI
 
 //STRUTTURE
 //struttura palla di cannone
@@ -100,6 +98,9 @@ struct _tank
 	int animationR;            //valore per l'animazione dei cingoli
 	int collision;
 	float collisionAngle;
+	int directCollision;
+	int randomMoves;
+	float randomAngle;
 	OrientedBoundingBox boundingVol;  //bounding box che racchiude l'intero carro armato (coordinate world)
 	float boundingRad;        //raggio della sfera che racchiude il carro armato
 };
@@ -150,6 +151,12 @@ int entries = 4;
 char levelFileName[10][32];
 int listLenght;
 int gameLoaded = 0;
+//luci
+float light0Position[] = {0.0f, 1.0f, 0.6f, 0.0f};
+float light1Position[] = {1.0f, 0.0f, 1.0f, 0.0f};
+float light2Position[] = {-1.0f, 0.0f, -1.0f, 0.0f};
+float light3Position[] = {0.0f, 1.0f, 0.0f, 0.0f};
+float light4Position[] = {0.0f, 1.0f, 0.0f, 0.0f};
 
 //FUNZIONI
 
@@ -195,10 +202,34 @@ void staticCollision(tank* t, int i, int x, int y)
 	{
 		t->pos[0] = t->lastPos.x;
 		t->pos[2] = t->lastPos.z;
-		if (i==0) // solo per il giocatore
+//		if (i==0) // solo per il giocatore
 			t->rot = t->lastRot;
 		t->v[0] *= -dumping;
 		t->v[2] *= -dumping;
+		
+		t->directCollision=5;
+		if(isColliding(levelMap->cm.tanksBB[i].vert[0], &levelMap->cm.obsBB[x][y]))
+		{
+        	sprintf(printScreen[8],"Collisione avanti e sinistra");
+        	t->directCollision=10;
+        }     
+    	else if(isColliding(levelMap->cm.tanksBB[i].vert[1], &levelMap->cm.obsBB[x][y]))
+    	{
+        	sprintf(printScreen[8],"Collisione dietro e sinistra");
+        	t->directCollision=-10;
+        }
+    	else if(isColliding(levelMap->cm.tanksBB[i].vert[4], &levelMap->cm.obsBB[x][y]))
+    	{
+        	sprintf(printScreen[8],"Collisione avanti e destra");
+        	t->directCollision=10;
+        }
+    	else if(isColliding(levelMap->cm.tanksBB[i].vert[5], &levelMap->cm.obsBB[x][y]))
+    	{
+        	sprintf(printScreen[8],"Collisione dietro e destra");
+        	t->directCollision=-10;
+        }
+        else
+			sprintf(printScreen[8],"Collisione alta???");
 	}
 }
 
@@ -295,73 +326,73 @@ int checkCollision(tank* t,float angle)
     //glTranslatef(levelMap->posX, 0.0f, levelMap->posY);
     //identifica tutti gli ostacoli presenti nella mappa
     for (z=0; z < levelMap->depth; z++)
-		{
-			for (x=0; x < levelMap->width; x++) {
-                //se è un ostacolo
-                if(levelMap->obs[x][z].type==1)
-                {
-                    float xObs = x * DIM_TILE+levelMap->posX;
-                    float zObs = z * DIM_TILE+levelMap->posY;
-                    float radius = DIM_TILE*0.6f;
-                    tankToObstacle.x = xObs - t->pos[0];
-                    tankToObstacle.y = 0.0f;
-                    tankToObstacle.z = zObs - t->pos[2];
-                    tankToStraight.x = -distance*sin(radians(angle));
-                    tankToStraight.y = 0.0f;
-                    tankToStraight.z = -distance*cos(radians(angle));
-                    
-                    pf = dotProduct(normalize(tankToStraight),normalize(tankToObstacle));
-    	            pf = pf*magnitude(tankToObstacle);
-    	            p  = scalProduct(pf,normalize(tankToStraight));
-    	            b  = subtract(tankToObstacle,p);
-    	            
-    	            //verifica se c'è collisione
-    	            float check=dotProduct(p,tankToStraight); //per controllare il segno di p
-                    if(magnitude(p)<magnitude(tankToStraight) && check>=0.0f && magnitude(b)<radius)
-                    {
+	{
+		for (x=0; x < levelMap->width; x++) {
+			//se è un ostacolo
+			if(levelMap->obs[x][z].type>=1)
+			{
+				float xObs = x * DIM_TILE+levelMap->posX;
+				float zObs = z * DIM_TILE+levelMap->posY;
+				float radius = DIM_TILE;
+				tankToObstacle.x = xObs - t->pos[0];
+				tankToObstacle.y = 0.0f;
+				tankToObstacle.z = zObs - t->pos[2];
+				tankToStraight.x = -distance*sin(radians(angle));
+				tankToStraight.y = 0.0f;
+				tankToStraight.z = -distance*cos(radians(angle));
+				
+				pf = dotProduct(normalize(tankToStraight),normalize(tankToObstacle));
+				pf = pf*magnitude(tankToObstacle);
+				p  = scalProduct(pf,normalize(tankToStraight));
+				b  = subtract(tankToObstacle,p);
+				
+				//verifica se c'è collisione
+				float check=dotProduct(p,tankToStraight); //per controllare il segno di p
+				if(magnitude(p)<magnitude(tankToStraight) && check>=0.0f && magnitude(b)<radius)
+				{
                     result = 1;
                     //sprintf(stampe2,"Collisione rilevataXY!");
-                    }
-    	            
-    	            //DISEGNO      
-    				glPushMatrix();
-    					glTranslatef(xObs, 0.0f, zObs);
-    					glutWireSphere(radius, 20, 20);	
-    				glPopMatrix();
-    				
-    				glPushMatrix();
-    				glBegin(GL_LINES);
-                    glNormal3f(0.0f,1.0f,0.0f);
-                	glVertex3f(xObs,0.2f,zObs);//FINE
-                	glVertex3f(t->pos[0],0.2f,t->pos[2]); //INIZIO
-                	glEnd();
-                	glPopMatrix();
-                	
-                	glPushMatrix();
-                	glBegin(GL_LINES);
-                    glNormal3f(0.0f,1.0f,0.0f);
-                	glVertex3f(-distance*sin(radians(angle)) + t->pos[0] ,0.2f,-distance*cos(radians(angle))+ t->pos[2]); //FINE
-                	glVertex3f(t->pos[0],0.2f,t->pos[2]); //INIZIO
-                	glEnd();
-                	glPopMatrix();
-                	
-                	glPushMatrix();
-                	glTranslatef(-distance*sin(radians(angle)) + t->pos[0], 0.0f, -distance*cos(radians(angle))+ t->pos[2]);
-                	glutSolidSphere(1.0f, 10, 10);
-                	glPopMatrix();
-                	glPushMatrix();
-                	glTranslatef(p.x + t->pos[0], 0.0f, p.z + t->pos[2]);
-                	glutSolidSphere(0.5f, 10, 10);
-                	glPopMatrix();
-                }//END IF
-			}//END FOR
+				}
+				
+				//DISEGNO      
+//				glPushMatrix();
+//				glTranslatef(xObs, 0.0f, zObs);
+//				glutWireSphere(radius, 20, 20);	
+//				glPopMatrix();
+//				
+//				glPushMatrix();
+//				glBegin(GL_LINES);
+//				glNormal3f(0.0f,1.0f,0.0f);
+//				glVertex3f(xObs,0.2f,zObs);//FINE
+//				glVertex3f(t->pos[0],0.2f,t->pos[2]); //INIZIO
+//				glEnd();
+//				glPopMatrix();
+//				
+//				glPushMatrix();
+//				glBegin(GL_LINES);
+//				glNormal3f(0.0f,1.0f,0.0f);
+//				glVertex3f(-distance*sin(radians(angle)) + t->pos[0] ,0.2f,-distance*cos(radians(angle))+ t->pos[2]); //FINE
+//				glVertex3f(t->pos[0],0.2f,t->pos[2]); //INIZIO
+//				glEnd();
+//				glPopMatrix();
+//				
+//				glPushMatrix();
+//				glTranslatef(-distance*sin(radians(angle)) + t->pos[0], 0.0f, -distance*cos(radians(angle))+ t->pos[2]);
+//				glutSolidSphere(1.0f, 10, 10);
+//				glPopMatrix();
+//				glPushMatrix();
+//				glTranslatef(p.x + t->pos[0], 0.0f, p.z + t->pos[2]);
+//				glutSolidSphere(0.5f, 10, 10);
+//				glPopMatrix();
+			}//END IF
 		}//END FOR
+	}//END FOR
     glPopMatrix();
     
-    //if(result==1)
-    //sprintf(stampe2,"Collisione rilevataXY!");
-    //else
-    //sprintf(stampe2,"Via liberaXY!");
+    if(result==1)
+		sprintf(stampe2,"Collisione rilevataXY!");
+    else
+		sprintf(stampe2,"Via liberaXY!");
     
     return result;
 }
@@ -402,17 +433,25 @@ void setDesertLights(void)
 //Crea l'illuminazione per il livello URBANO
 void setUrbanLights(void)
 {
-	float ambient0[] = {1.0f, 1.0f, 1.0f};
+	float ambient0[] = {0.5f, 0.5f, 0.5f};
 	float diffuse0[] = {1.0f, 1.0f, 1.0f};
 	float specular0[] = {1.0f, 1.0f, 1.0f};
 	
-	float ambient1[] = {1.0f, 1.0f, 1.0f};
-	float diffuse1[] = {0.7f, 0.7f, 0.7f};
-	float specular1[] = {1.0f, 1.0f, 1.0f};
+	float ambient1[] = {0.9f, 0.9f, 0.9f};
+	float diffuse1[] = {1.0f, 1.0f, 1.0f};
+	float specular1[] = {0.0f, 0.0f, 0.0f};
 	
-	float ambient2[] = {1.0f, 1.0f, 1.0f};
-	float diffuse2[] = {0.5f, 0.5f, 0.5f};
-	float specular2[] = {1.0f, 1.0f, 1.0f};
+	float ambient2[] = {0.0f, 0.0f, 0.0f};
+	float diffuse2[] = {1.0f, 1.0f, 1.0f};
+	float specular2[] = {0.0f, 0.0f, 0.0f};
+	
+    float ambient3[] = {0.0f, 0.0f, 0.0f};
+	float diffuse3[] = {1.0f, 1.0f, 1.0f};
+	float specular3[] = {0.0f, 0.0f, 0.0f};
+	
+	float ambient4[] = {1.0f, 1.0f, 1.0f};
+	float diffuse4[] = {0.4f, 0.4f, 0.4f};
+	float specular4[] = {0.0f, 0.0f, 0.0f};
 	
 	glEnable(GL_LIGHTING);
 	
@@ -430,6 +469,57 @@ void setUrbanLights(void)
 	glLightfv(GL_LIGHT2, GL_DIFFUSE, diffuse2);
 	glLightfv(GL_LIGHT2, GL_SPECULAR, specular2);
 	glEnable(GL_LIGHT2);
+	
+	glLightfv(GL_LIGHT3, GL_AMBIENT, ambient3);
+	glLightfv(GL_LIGHT3, GL_DIFFUSE, diffuse3);
+	glLightfv(GL_LIGHT3, GL_SPECULAR, specular3);
+	glEnable(GL_LIGHT3);
+	
+	glLightfv(GL_LIGHT4, GL_AMBIENT, ambient4);
+	glLightfv(GL_LIGHT4, GL_DIFFUSE, diffuse4);
+	glLightfv(GL_LIGHT4, GL_SPECULAR, specular4);
+	glEnable(GL_LIGHT4);
+	
+	int z;int x;int c=0;
+	for (z=0; z < levelMap->depth; z++)
+	{
+		for (x=0; x < levelMap->width; x++) 
+		{
+			//se è un ostacolo
+			if(levelMap->obs[x][z].type==2)
+			{
+				if(c==0)
+				{
+                    light0Position[0] = x * DIM_TILE + levelMap->posX;
+                    light0Position[1] = 2.0f * DIM_TILE;
+                    light0Position[2] = z * DIM_TILE + levelMap->posY;
+                    light0Position[3] = 1.0f;
+				}
+				if(c==1)
+				{
+                    light1Position[0] = x * DIM_TILE + levelMap->posX;
+                    light1Position[1] = 2.0f * DIM_TILE;
+                    light1Position[2] = z * DIM_TILE + levelMap->posY;
+                    light1Position[3] = 1.0f;
+				}
+				if(c==2)
+				{
+                    light2Position[0] = x * DIM_TILE + levelMap->posX;
+                    light2Position[1] = 2.0f * DIM_TILE;
+                    light2Position[2] = z * DIM_TILE + levelMap->posY;
+                    light2Position[3] = 1.0f;
+				}
+				if(c==3)
+				{
+                    light3Position[0] = x * DIM_TILE + levelMap->posX;
+                    light3Position[1] = 2.0f * DIM_TILE;
+                    light3Position[2] = z * DIM_TILE + levelMap->posY;
+                    light3Position[3] = 1.0f;
+				}
+                c++;
+			}
+		}
+    }
 }
 
 //Attiva le luci nel livello DESERTO
@@ -447,13 +537,29 @@ void displayDesertLights(void)
 //Attiva le luci nel livello URBANO
 void displayUrbanLights(void)
 {
-	float light0Position[] = {0.0f, 1.0f, 0.0f, 0.0f};
-	float light1Position[] = {1.0f, 0.0f, 1.0f, 0.0f};
-	float light2Position[] = {-1.0f, 0.0f, -1.0f, 0.0f};	
-	
+    GLfloat spotDir[]={0.0,-1.0,0.0};
+    glLightfv(GL_LIGHT0, GL_SPOT_DIRECTION, spotDir);
+    glLightf(GL_LIGHT0, GL_SPOT_CUTOFF,120.0);
+    glLightf(GL_LIGHT0, GL_SPOT_EXPONENT,1.0);	
+	glLightf(GL_LIGHT0, GL_LINEAR_ATTENUATION,0.1);
+    glLightfv(GL_LIGHT1, GL_SPOT_DIRECTION, spotDir);
+    glLightf(GL_LIGHT1, GL_SPOT_CUTOFF,120.0);
+    glLightf(GL_LIGHT1, GL_SPOT_EXPONENT,1.0);	
+	glLightf(GL_LIGHT1, GL_LINEAR_ATTENUATION,0.1);
+    glLightfv(GL_LIGHT2, GL_SPOT_DIRECTION, spotDir);
+    glLightf(GL_LIGHT2, GL_SPOT_CUTOFF,120.0);
+    glLightf(GL_LIGHT2, GL_SPOT_EXPONENT,1.0);	
+	glLightf(GL_LIGHT2, GL_LINEAR_ATTENUATION,0.1);
+    glLightfv(GL_LIGHT3, GL_SPOT_DIRECTION, spotDir);
+    glLightf(GL_LIGHT3, GL_SPOT_CUTOFF,120.0);
+    glLightf(GL_LIGHT3, GL_SPOT_EXPONENT,1.0);	
+	glLightf(GL_LIGHT3, GL_LINEAR_ATTENUATION,0.1);	
 	glLightfv(GL_LIGHT0, GL_POSITION, light0Position);
 	glLightfv(GL_LIGHT1, GL_POSITION, light1Position);
 	glLightfv(GL_LIGHT2, GL_POSITION, light2Position);
+	glLightfv(GL_LIGHT3, GL_POSITION, light3Position);
+	
+	glLightfv(GL_LIGHT4, GL_POSITION, light4Position);
 }
 
 //Abilita l'illuminazione della scena
@@ -677,23 +783,12 @@ float rotateTowards(float angle,float angleSign,float currentRotation)
     }
 }
 
-void attackEnemy(tank *tankT)
-{
+void attackEnemy(tank *tankT,float angle,float XSign, float distance)
+{   
 	float stepD = 15.0f;
-	float distanceX = (tankT->pos[0]-tanks[0].pos[0]);
-	float distanceZ = (tankT->pos[2]-tanks[0].pos[2]);
-	float distance = sqrt(distanceX*distanceX + distanceZ*distanceZ);
-	float XSign = 1.0f;
-	if(distanceX<0.0f)
-		XSign = -1.0f;
-	float TSign = 1.0f;
-	if(tankT->rot<0.0f)
-		TSign = -1.0f;
-	//trova l'angolo rispetto a Z. Moltiplicazione per il segno di distanceX per recuperare
-	//la direzione della rotazione rispetto all'asse X(di cui non teniamo conto nell'acos)
-	//troviamo valori di rotazioni che vanno da -M_PI a +M_PI
-	float angle = acos(distanceZ/distance);// * XSign;
 	float reduction = distance/stepD;
+	
+	tankT->state=1;
 	if(reduction>1.0f)
 		reduction=1.0f;
 	if(reduction<-1.0f)
@@ -702,16 +797,16 @@ void attackEnemy(tank *tankT)
 	//all'interno della zona di raggio step frena e gira la torretta verso il carro armato nemico
 	if(((reduction>=0.0f && reduction<1.0f) || (reduction>-1.0f && reduction<0.0f)))
 	{
-		tankT->v[0] *= 0.90f;
-		tankT->v[2] *= 0.90f;
+		float stepR = 2.0f;         
 		float actualRotation = (tankT->userTurret.rot + tankT->rot);
-		actualRotation = normalize180(actualRotation);    
-		float stepR = 2.0f;
+		actualRotation = normalize180(actualRotation); 
+		tankT->v[0] *= 0.90f;
+		tankT->v[2] *= 0.90f;   
 		if(checkRotationInStep(angle,XSign,actualRotation,stepR)==1)
 		{
 			if(tankT->rechargeTime >= tankT->rechargeNeeded)
 			{
-				//shoot(tankT);
+				shoot(tankT);
 			}
 		}
 		else
@@ -731,11 +826,11 @@ void attackEnemy(tank *tankT)
 			float stepR = 2.0f;
 			//se la rotazione è entro lo step di rotazione del nemico
 			if(checkRotationInStep(angle,XSign,tankT->rot,stepR)==1)
-			{         
+			{
+				float TSign = getSign(tankT->userTurret.rot);         
 				//accelera
-				tankT->enginePower = 300.0f*reduction;
+				tankT->enginePower = 100.0f*reduction;
 				//raddrizza torretta nel cammino
-				float TSign = getSign(tankT->userTurret.rot);
 				if(fabs(tankT->userTurret.rot)>2.0f)
 					tankT->userTurret.rot += -1.5f * TSign;     
 			}
@@ -789,43 +884,138 @@ void attackEnemy(tank *tankT)
 	}
 }
 
-void runAway(tank *tankT)
+void runAway(tank *tankT,float angle,float XSign,float distance)
 {
-	float hMapL = 50.0f;
-	float hMapW = 50.0f;
-	//equazione della circonferenza
-	// X^2 + Y^2 = r^2
-	//devi trovare un punto esterno alla circonferenza che sia entro la mappa
+    
+    float step = 30.0f;
+    float reduction = distance/step;
 	
-	float step = 30.0f;
-	float distanceX = (tankT->pos[0]-tanks[0].pos[0]);
-	float distanceZ = (tankT->pos[2]-tanks[0].pos[2]);
-	float distance = sqrt(distanceX*distanceX + distanceZ*distanceZ);
-	//trova l'angolo rispetto a Z. Moltiplicazione per il segno di distanceX per recuperare
-	//la direzione della rotazione rispetto all'asse X(di cui non teniamo conto nell'acos)
-	float angle = acos(distanceZ/distance) * distanceX/fabs(distanceX);
-	float reduction = distance/step;
-	if(reduction>1.0f)
+    tankT->state=3;                                                                   
+    //trovo l'angolo inverso per scappare
+    angle = normalizeMPI(angle*XSign+M_PI);
+    XSign = getSign(angle);
+    angle = fabs(angle);
+    //distanza percentuale sullo step
+    if(reduction>1.0f)
 		reduction=1.0f;
-	if(reduction<-1.0f)
+    if(reduction<-1.0f)
 		reduction=-1.0f;
-	
-	if(((reduction>=0.0f && reduction<1.0f) || (reduction>-1.0f && reduction<0.0f)))
-	{
-		tankT->enginePower = 100.0f*reduction;
-	}
-	else 
-	{
-		tankT->v[0] *= 0.94f;
-		tankT->v[2] *= 0.94f;
-		//tankT->enginePower = 100.0f*reduction;
-	}
-	
-	tankT->rot = (angle+M_PI)*180.0f/M_PI;
+    //a seconda della vicinanza cambia il valore di forza al motore
+    float reductionInverse = step/distance;
+    if(reductionInverse>1.0f)
+        reductionInverse=1.0f;
+    if(reductionInverse<-1.0f)
+        reductionInverse=-1.0f;
+    
+    //se non c'è collisione nella direzione verso cui dovrei ruotare
+    if(checkCollision(tankT,degrees(angle*XSign))==0)
+    {
+        if(checkRotationInStep(angle,XSign,tankT->rot,2.0f)==1)
+        {
+            if(((reduction>=0.0f && reduction<1.0f) || (reduction>-1.0f && reduction<0.0f)))
+            {
+                tankT->enginePower = 100.0f*reductionInverse;
+            }
+            else 
+            {
+                tankT->v[0] *= 0.94f;
+                tankT->v[2] *= 0.94f;
+            }      
+        }
+        else
+        {
+            //se sei in movimento fermati
+            if((tankT->speed<=-0.1f) || (tankT->speed>=0.1f))
+            {
+				tankT->v[0] *= 0.94f;
+				tankT->v[2] *= 0.94f;
+            }
+            else
+				//se sei fermo ruota verso la nuova posizione
+				tankT->rot = rotateTowards(angle,XSign,tankT->rot);
+        }
+    }
+    else
+    {
+		//entra in modalità collision avoidance      
+		float stepC = 30.0f;
+		tankT->collision = 10;
+		int i;
+		for(i=1;i<5;i++)
+		{
+			//se non c'è collisione all'angolo di collisione + 10*i
+			if(checkCollision(tankT,normalize180(degrees(angle*XSign)+stepC*i))==0)
+			{
+				tankT->collisionAngle = normalize180(degrees(angle*XSign)+stepC*i);
+				break;
+			}
+		}
+    }
 }
 
 void randomMove(tank *tankT)
 {
+	if(tankT->state!=2)
+	{
+		srand(time(NULL));
+		float rA = (float)(rand() % 180 + 1);
+		float XSign = (float)(rand() % 2);
+		srand(time(NULL));
+		if(XSign==0.0f)
+			XSign=-1.0f;
+		tankT->randomAngle = rA*XSign;
+		tankT->state=2;
+		sprintf(stampe2,"Cambio angolo: %f",XSign);
+	}
+	//se non c'è collisione nella direzione verso cui dovrei ruotare
+	if(checkCollision(tankT,tankT->randomAngle)==0)
+	{
+		if(checkRotationInStep(radians(fabs(tankT->randomAngle)),getSign(tankT->randomAngle),tankT->rot,2.0f)==1)
+		{
+			//cambiando lo stato in null(4),se si rientra in random move si è forzati
+			//a cercare un altro angolo
+			if(tankT->randomMoves>=20)
+			{
+				
+				tankT->randomMoves=0;
+				tankT->state=4;         
+			}
+			else
+			{
+				tankT->enginePower = 50.0f;
+				tankT->randomMoves++;
+				sprintf(stampe2,"Random moves: %i",tankT->randomMoves);
+			}       
+		}
+		else
+		{
+			//se sei in movimento fermati
+			if((tankT->speed<=-0.1f) || (tankT->speed>=0.1f))
+			{
+				tankT->v[0] *= 0.94f;
+				tankT->v[2] *= 0.94f;
+			}
+			else
+				//se sei fermo ruota verso la nuova posizione
+				tankT->rot = rotateTowards(radians(fabs(tankT->randomAngle)),getSign(tankT->randomAngle),tankT->rot);
+		}
+	}
+	else
+	{
+		//entra in modalità collision avoidance
+		float stepC = 30.0f;
+		tankT->collision = 10;
+		int i;
+		for(i=1;i<5;i++)
+		{
+			//se non c'è collisione all'angolo di collisione + 10*i
+			if(checkCollision(tankT,normalize180(tankT->randomAngle+stepC*i))==0)
+			{
+				tankT->collisionAngle = normalize180(tankT->randomAngle+stepC*i);
+				break;
+			}
+		}
+	}
 }
 
 void planAction(tank *tankT)
@@ -841,39 +1031,59 @@ void planAction(tank *tankT)
 	//se è stata rilevata collisione
 	//EVITA COLLISIONE
 	
+	//variabili:
+	//distanceX distanza sull'asse delle X tra tankT e carro utente
+	//distanceZ distanza sull'asse delle Z tra tankT e carro utente
+	//distance  vettore distanza
+	//angle     angolo senza segno tra tankT e carro utente
+	//XSign     segno dell'angolo angle
+	
+	//trova l'angolo rispetto a Z. Moltiplicazione per il segno di distanceX per recuperare
+	//la direzione della rotazione rispetto all'asse X(di cui non teniamo conto nell'acos)
+	//troviamo valori di rotazioni che vanno da -M_PI a +M_PI
 	float distanceX = (tankT->pos[0]-tanks[0].pos[0]);
 	float distanceZ = (tankT->pos[2]-tanks[0].pos[2]);
 	float distance = sqrt(distanceX*distanceX + distanceZ*distanceZ);
-	float XSign = 1.0f;
-	if(distanceX<0.0f)
-		XSign = -1.0f;
-	float TSign = 1.0f;
-	if(tankT->rot<0.0f)
-		TSign = -1.0f;
-	float angle = acos(distanceZ/distance);// * XSign;
-										   //se non è stata rilevata una collisione in precedenza
-	if(tankT->collision==0)
+	float XSign = getSign(distanceX);
+	float angle = acos(distanceZ/distance);
+	
+	//se non è stata rilevata una collisione in precedenza
+	if(tankT->collision==0 && tankT->directCollision==0)
 	{
         //se non hai abbastanza vita o munizioni
         if
 			(
 			 (tankT->life<50.0f) ||
-			 (tankT->life>50.0f && tankT->life<=70.0f && tankT->ammo<7) ||
+			 (tankT->life>=50.0f && tankT->life<=70.0f && tankT->ammo<7) ||
 			 (tankT->life>70.0f && tankT->ammo<3)
 			 )
 			//scappa
-			runAway(tankT);
+			runAway(tankT,angle,XSign,distance);
         //altrimenti se il nemico è in visuale
-    	else if
-			(
-    	     checkRotationInStep(angle,XSign,tankT->rot,30.0f)==1
-			 )
+    	else if(checkRotationInStep(angle,XSign,tankT->rot,30.0f)==1)
 			//attacca
-			attackEnemy(tankT);
+			attackEnemy(tankT,angle,XSign,distance);
         //altrimenti
     	else
 			//movimento casuale
 			randomMove(tankT);
+    }
+    //se in precedenza hai colliso (modalità collision avoidance)
+    else if(tankT->directCollision!=0)
+    {
+		
+		if(tankT->directCollision>0)
+		{
+			tankT->enginePower=-150.0f;
+			tankT->directCollision--;
+			sprintf(printScreen[7],"Ho colliso avanti! %i",tankT->directCollision);
+		}
+		else if(tankT->directCollision<0)
+		{
+			tankT->enginePower=150.0f;
+			tankT->directCollision++;
+			sprintf(printScreen[7],"Ho colliso dietro! %i",tankT->directCollision);
+		}
     }
     //se in precedenza hai rilevato una collisione (modalità collision avoidance)
     else
@@ -882,24 +1092,24 @@ void planAction(tank *tankT)
         //se sei in movimento fermati
         int check = checkRotationInStep(fabs(radians(tankT->collisionAngle)),getSign(tankT->collisionAngle),tankT->rot,2.0f);
         if(((tankT->speed<=-0.1f) || (tankT->speed>=0.1f)) && check==0)
-		{
-			tankT->v[0] *= 0.94f;
-			tankT->v[2] *= 0.94f;
-		}
+        {
+            //tankT->v[0] *= 0.94f;
+            //tankT->v[2] *= 0.94f;
+            tankT->v[0] *= 0.1f;
+            tankT->v[2] *= 0.1f;
+        }
         else
-		{
+        {
 			if(check==1)
 			{
 				tankT->enginePower = 100.0f;
 				tankT->collision--;
-				sprintf(stampe2,"Collisione evitata!");
 			}
 			else 
 			{
-				tankT->rot = rotateTowards(fabs(radians(tankT->collisionAngle)),getSign(tankT->collisionAngle),tankT->rot);         
-				sprintf(stampe2,"Sto ruotando!");
+				tankT->rot = rotateTowards(fabs(radians(tankT->collisionAngle)),getSign(tankT->collisionAngle),tankT->rot);
 			}
-		}
+        }
     }
 }
 
@@ -1158,6 +1368,11 @@ void loadGame(char* levelName)
 	sprintf(path, "%s/%s", dir, levelName);
 	levelMap = loadLevel(path);
 	
+	if(levelMap->levelType==1)
+    	setDesertLights();
+	if(levelMap->levelType==2)
+    	setUrbanLights();
+
 	levelMap->pwupRot = 0.0f;
 	
 	tanks = (tank*) malloc((levelMap->enemies+1) * sizeof(tank));
@@ -1268,9 +1483,12 @@ void loadGame(char* levelName)
 			levelMap->cm.tanksBB[i].vert[j].z = 0.0f;
 		}
 		tanks[i].boundingRad = 2.2f;
-    	
+
     	tanks[i].collision = 0;
     	tanks[i].collisionAngle = 0.0f;
+    	tanks[i].directCollision = 0;
+    	tanks[i].randomMoves = 0;
+    	tanks[i].randomAngle = 0.0f;
 		turretView = 0;
 
 		gameLoaded = 1;
@@ -1364,6 +1582,11 @@ void displayGame(void)
 {
 	int i = 0;
 	
+	if(levelMap->levelType==1)
+        displayDesertLights();
+	if(levelMap->levelType==2)
+    	displayUrbanLights();
+	
 	glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	
 	glMatrixMode(GL_PROJECTION);
@@ -1408,7 +1631,6 @@ void displayGame(void)
 				  tanks[0].pos[0] - 5.0f*sin((tanks[0].rot+tanks[0].userTurret.rot)*M_PI/180.0f), 2.5f + sin(tanks[0].userTurret.tankCannon.rot*M_PI/180.0f),tanks[0].pos[2] - 5.0f*cos((tanks[0].rot+tanks[0].userTurret.rot)*M_PI/180.0f),//At
 				  0.0f, 1.0f, 0.0f);//Up
     }
-	displayDesertLights();
 	
 	//disegno i modelli
 	
@@ -1813,8 +2035,8 @@ void idle(void)
 			// S = So + vo*t + a*t*t*0.5
 			//calcolo delle equazioni del moto
 			tanks[i].pos[0] += tanks[i].v[0]*deltaT + tanks[i].a[0]*deltaT*deltaT*0.5f;
-			tanks[i].v[0] += tanks[i].a[0] * deltaT; //velocità finale
 			tanks[i].pos[2] += tanks[i].v[2]*deltaT + tanks[i].a[2]*deltaT*deltaT*0.5f;
+			tanks[i].v[0] += tanks[i].a[0] * deltaT; //velocità finale
 			tanks[i].v[2] += tanks[i].a[2] * deltaT; //velocità finale
 			
 			tanks[i].enginePower = 0.0f;

@@ -18,17 +18,17 @@ map* loadLevel(char* path)
 	myMap = (map*) malloc(sizeof(map));
 	
 	// Caricamento modelli
-	myMap->sky = (obj*) loadOBJ("obj/sky.obj");
-	myMap->background[0] = (obj*) loadOBJ("obj/des_wall.obj");
-	myMap->background[1] = (obj*) loadOBJ("obj/des_dunes.obj");
-	obs[0] = (obj*) loadOBJ("obj/des_ground.obj");
-	obs[1] = (obj*) loadOBJ("obj/des_cactus.obj");
-	obs[2] = (obj*) loadOBJ("obj/des_trench_ns.obj");
-	obs[3] = (obj*) loadOBJ("obj/des_trench_we.obj");
-	obs[4] = (obj*) loadOBJ("obj/des_trench_end_n.obj");
-	obs[5] = (obj*) loadOBJ("obj/des_trench_end_s.obj");
-	obs[6] = (obj*) loadOBJ("obj/des_trench_end_w.obj");
-	obs[7] = (obj*) loadOBJ("obj/des_trench_end_e.obj");
+//	myMap->sky = (obj*) loadOBJ("obj/sky.obj");
+//	myMap->background[0] = (obj*) loadOBJ("obj/des_wall.obj");
+//	myMap->background[1] = (obj*) loadOBJ("obj/des_dunes.obj");
+//	obs[0] = (obj*) loadOBJ("obj/des_ground.obj");
+//	obs[1] = (obj*) loadOBJ("obj/des_cactus.obj");
+//	obs[2] = (obj*) loadOBJ("obj/des_trench_ns.obj");
+//	obs[3] = (obj*) loadOBJ("obj/des_trench_we.obj");
+//	obs[4] = (obj*) loadOBJ("obj/des_trench_end_n.obj");
+//	obs[5] = (obj*) loadOBJ("obj/des_trench_end_s.obj");
+//	obs[6] = (obj*) loadOBJ("obj/des_trench_end_w.obj");
+//	obs[7] = (obj*) loadOBJ("obj/des_trench_end_e.obj");
 	pwup[0] = (obj*) loadOBJ("obj/pwup_ammo.obj");
 	pwup[1] = (obj*) loadOBJ("obj/pwup_health.obj");
 	pwup[2] = (obj*) loadOBJ("obj/pwup_quad_damage.obj");
@@ -39,8 +39,42 @@ map* loadLevel(char* path)
 	{
 		while (fgets(line, 99, fp))
 		{
+			//tipo di livello
+            if (line[0] == 'l')
+            {
+                sscanf(line, "%*c %d", &myMap->levelType);
+                if(myMap->levelType==1) //deserto
+                {
+                	myMap->sky = (obj*) loadOBJ("obj/sky.obj");
+               		myMap->background[0] = (obj*) loadOBJ("obj/des_wall.obj");
+                	myMap->background[1] = (obj*) loadOBJ("obj/des_dunes.obj");
+                    obs[0] = (obj*) loadOBJ("obj/des_ground.obj");
+                    obs[1] = (obj*) loadOBJ("obj/des_cactus.obj");
+                    obs[2] = (obj*) loadOBJ("obj/des_trench_ns.obj");
+                	obs[3] = (obj*) loadOBJ("obj/des_trench_we.obj");
+                	obs[4] = (obj*) loadOBJ("obj/des_trench_end_n.obj");
+                	obs[5] = (obj*) loadOBJ("obj/des_trench_end_s.obj");
+                	obs[6] = (obj*) loadOBJ("obj/des_trench_end_w.obj");
+                	obs[7] = (obj*) loadOBJ("obj/des_trench_end_e.obj");
+                }
+                else if(myMap->levelType==2) //urbano
+                {
+                	myMap->sky = (obj*) loadOBJ("obj/sky_night.obj");
+               		myMap->background[0] = (obj*) loadOBJ("obj/urb_wall.obj");
+                	myMap->background[1] = (obj*) loadOBJ("obj/urb_building_big.obj");
+                    obs[0] = (obj*) loadOBJ("obj/urb_ground.obj");
+                    obs[1] = (obj*) loadOBJ("obj/urb_lamp.obj");
+                    obs[2] = (obj*) loadOBJ("obj/urb_crate.obj");
+                	obs[3] = (obj*) loadOBJ("obj/urb_crate.obj");
+                	obs[4] = (obj*) loadOBJ("obj/urb_crate.obj");
+                	obs[5] = (obj*) loadOBJ("obj/urb_crate.obj");
+                	obs[6] = (obj*) loadOBJ("obj/urb_crate.obj");
+                	obs[7] = (obj*) loadOBJ("obj/urb_crate.obj");
+                }
+				
+            }
 			// numero di nemici
-			if (line[0] == 'e')
+			else if (line[0] == 'e')
 			{
 				sscanf(line, "%*c %d", &myMap->enemies);
 				myMap->enemies = fminf(myMap->enemies, 9);
@@ -58,7 +92,7 @@ map* loadLevel(char* path)
 							break;
 						case 'Y':
 							myMap->obs[x][y].model = obs[1];
-							myMap->obs[x][y].type = 1;
+							myMap->obs[x][y].type = 2;
 							myMap->pwup[x][y].placed = 0;
 							break;
 						case 'I':
@@ -155,7 +189,7 @@ map* loadLevel(char* path)
 		
 		for (i=2; i<8; i++)
 		{
-			obs[i]->bb.max.y = 0.05f;
+			obs[i]->bb.max.y += 0.05f;
 		}
 		
 		// Imposto le posizioni delle bounding box degli ostacoli statici

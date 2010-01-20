@@ -36,6 +36,7 @@ struct _map
 	int loaded;
 	collisionMap cm;
 	float pwupRot;
+	int levelType;
 };
 typedef struct _map map;
 
