@@ -17,18 +17,7 @@ map* loadLevel(char* path)
 	
 	myMap = (map*) malloc(sizeof(map));
 	
-	// Caricamento modelli
-//	myMap->sky = (obj*) loadOBJ("obj/sky.obj");
-//	myMap->background[0] = (obj*) loadOBJ("obj/des_wall.obj");
-//	myMap->background[1] = (obj*) loadOBJ("obj/des_dunes.obj");
-//	obs[0] = (obj*) loadOBJ("obj/des_ground.obj");
-//	obs[1] = (obj*) loadOBJ("obj/des_cactus.obj");
-//	obs[2] = (obj*) loadOBJ("obj/des_trench_ns.obj");
-//	obs[3] = (obj*) loadOBJ("obj/des_trench_we.obj");
-//	obs[4] = (obj*) loadOBJ("obj/des_trench_end_n.obj");
-//	obs[5] = (obj*) loadOBJ("obj/des_trench_end_s.obj");
-//	obs[6] = (obj*) loadOBJ("obj/des_trench_end_w.obj");
-//	obs[7] = (obj*) loadOBJ("obj/des_trench_end_e.obj");
+	// Caricamento modelli powerup
 	pwup[0] = (obj*) loadOBJ("obj/pwup_ammo.obj");
 	pwup[1] = (obj*) loadOBJ("obj/pwup_health.obj");
 	pwup[2] = (obj*) loadOBJ("obj/pwup_quad_damage.obj");

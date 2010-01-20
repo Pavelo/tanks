@@ -169,8 +169,6 @@ obj* loadOBJ(char* path)
 					mtllibPath[i] = '\0';
 				}
 			}
-			//        	printf("v %f %f %f\n", model.v[model->vCount].x, model.v[model->vCount].y, model.v[model->vCount].z);
-			//        	printf("%f %f %f\n", model.vn[f[model->fCount].n1-1].x, model.vn[f[model->fCount].n1-1].y, model.vn[f[model->fCount].n1-1].z);
 		}
 		loaded = 1;
 	}
@@ -186,11 +184,6 @@ obj* loadOBJ(char* path)
 
 void drawOBJ(obj* model)
 {
-	//	printf("ambient %f %f %f\n", ambient[0], ambient[1], ambient[2]);
-	//	printf("diffuse %f %f %f\n", diffuse[0], diffuse[1], diffuse[2]);
-	//	printf("specular %f %f %f\n", specular[0], specular[1], specular[2]);
-	//	printf("shininess %f\n", shininess);
-	
 	glMaterialfv(GL_FRONT, GL_AMBIENT, model->ambient);
 	glMaterialfv(GL_FRONT, GL_DIFFUSE, model->diffuse);
 	glMaterialfv(GL_FRONT, GL_SPECULAR, model->specular);
@@ -219,16 +212,6 @@ void drawOBJ(obj* model)
 		glNormal3f(model->vn[model->f[i].n4-1].x, model->vn[model->f[i].n4-1].y, model->vn[model->f[i].n4-1].z);
 		glTexCoord2f(model->vt[model->f[i].t4-1].u, model->vt[model->f[i].t4-1].v);
 		glVertex3f(model->v[model->f[i].v4-1].x, model->v[model->f[i].v4-1].y, model->v[model->f[i].v4-1].z);
-		
-		/*printf("v1 %f %f %f\n", v[f[i].v1-1].x, v[f[i].v1-1].y, v[f[i].v1-1].z);
-		 printf("v2 %f %f %f\n", v[f[i].v2-1].x, v[f[i].v2-1].y, v[f[i].v2-1].z);
-		 printf("v3 %f %f %f\n", v[f[i].v3-1].x, v[f[i].v3-1].y, v[f[i].v3-1].z);
-		 printf("v4 %f %f %f\n", v[f[i].v4-1].x, v[f[i].v4-1].y, v[f[i].v4-1].z);
-		 
-		 printf("vn1 %f %f %f\n", vn[f[i].n1-1].x, vn[f[i].n1-1].y, vn[f[i].n1-1].z);
-		 printf("vn2 %f %f %f\n", vn[f[i].n2-1].x, vn[f[i].n2-1].y, vn[f[i].n2-1].z);
-		 printf("vn3 %f %f %f\n", vn[f[i].n3-1].x, vn[f[i].n3-1].y, vn[f[i].n3-1].z);
-		 printf("vn4 %f %f %f\n", vn[f[i].n4-1].x, vn[f[i].n4-1].y, vn[f[i].n4-1].z);*/
 	}
 	
 	glEnd();
@@ -248,14 +231,6 @@ void drawOBJ(obj* model)
 		glNormal3f(model->vn[model->f3[i].n3-1].x, model->vn[model->f3[i].n3-1].y, model->vn[model->f3[i].n3-1].z);
 		glTexCoord2f(model->vt[model->f3[i].t3-1].u, model->vt[model->f3[i].t3-1].v);
 		glVertex3f(model->v[model->f3[i].v3-1].x, model->v[model->f3[i].v3-1].y, model->v[model->f3[i].v3-1].z);
-		
-		/*            printf("v1 %f %f %f\n", v[f[i].v1-1].x, v[f[i].v1-1].y, v[f[i].v1-1].z);
-		 printf("v2 %f %f %f\n", v[f[i].v2-1].x, v[f[i].v2-1].y, v[f[i].v2-1].z);
-		 printf("v3 %f %f %f\n", v[f[i].v3-1].x, v[f[i].v3-1].y, v[f[i].v3-1].z);
-		 
-		 printf("vn1 %f %f %f\n", vn[f[i].n1-1].x, vn[f[i].n1-1].y, vn[f[i].n1-1].z);
-		 printf("vn2 %f %f %f\n", vn[f[i].n2-1].x, vn[f[i].n2-1].y, vn[f[i].n2-1].z);
-		 printf("vn3 %f %f %f\n", vn[f[i].n3-1].x, vn[f[i].n3-1].y, vn[f[i].n3-1].z);*/
 	}
 	
 	glEnd();
