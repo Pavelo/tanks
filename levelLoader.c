@@ -178,7 +178,8 @@ map* loadLevel(char* path)
 		
 		for (i=2; i<8; i++)
 		{
-			obs[i]->bb.max.y += 0.05f;
+			if (myMap->levelType == 1)
+				obs[i]->bb.max.y += 0.05f;
 		}
 		
 		// Imposto le posizioni delle bounding box degli ostacoli statici

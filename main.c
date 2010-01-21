@@ -151,6 +151,8 @@ int entries = 4;
 char levelFileName[10][32];
 int listLenght;
 int gameLoaded = 0;
+int currentLevel = -1;
+int gameMode; // 0: new game | 1: play level
 //luci
 float light0Position[] = {0.0f, 1.0f, 0.6f, 0.0f};
 float light1Position[] = {1.0f, 0.0f, 1.0f, 0.0f};
@@ -1096,6 +1098,8 @@ void initMenu(void)
 	loadTGA("texture/menu_levels.tga", 1001);
 	loadTGA("texture/menu_credits.tga", 1002);
 	loadTGA("texture/menu_loading.tga", 1003);
+	loadTGA("texture/menu_loading.tga", 1004);
+	loadTGA("texture/menu_loading.tga", 1005);
 	
 	DIR* directory = opendir("levels");
 	int i;
@@ -1202,6 +1206,16 @@ void loadGame(char* levelName)
 	char dir[] = "levels";
 	sprintf(path, "%s/%s", dir, levelName);
 	levelMap = loadLevel(path);
+	
+	// spengo tutte le luci per evitare che rimangano luci attive dal livello precedente
+	glDisable(GL_LIGHT0);
+	glDisable(GL_LIGHT1);
+	glDisable(GL_LIGHT2);
+	glDisable(GL_LIGHT3);
+	glDisable(GL_LIGHT4);
+	glDisable(GL_LIGHT5);
+	glDisable(GL_LIGHT6);
+	glDisable(GL_LIGHT7);
 	
 	if(levelMap->levelType==1)
     	setDesertLights();
@@ -1370,7 +1384,10 @@ void displayMenu(void)
 			
 		case 0: // new game
 			drawQuad(1003);
-			loadGame(levelFileName[0]);
+			gameMode = 0;
+			currentLevel++;
+			currentLevel = fmodf(currentLevel, listLenght);
+			loadGame(levelFileName[currentLevel]);
 			menuAction = -1;
 			selectBoxPlace = 0;
 			showMenu = 0;
@@ -1379,6 +1396,7 @@ void displayMenu(void)
 		case 1: // play level
 			printLvlList(WIDTH/2, 373);
 			drawQuad(1001);
+			gameMode = 1;
 			
 			//rettangolo di selezione
 			selectBoxCoord.x = 0.480f;
@@ -1398,7 +1416,10 @@ void displayMenu(void)
 			break;
 		
 		case 2: // credits
-			drawQuad(1002);
+			if (gameMode == 2)
+				drawQuad(1004);
+			else
+				drawQuad(1002);
 			break;
 
 		case 3:
@@ -1688,6 +1709,7 @@ void keyboard(unsigned char key, int x, int y)
 			case 13: // CR (carriage return - corrisponde a INVIO su mac)
 				menuAction = selectBoxPlace;
 				selectBoxPlace = 0;
+				currentLevel = -1;
 				break;
 
 			default:
@@ -1719,6 +1741,7 @@ void keyboard(unsigned char key, int x, int y)
 			default:
 				menuAction = -1;
 				selectBoxPlace = 2;
+				gameMode = 0;
 				break;
 		}
 	}
@@ -1982,16 +2005,26 @@ void idle(void)
 		//vittoria giocatore
 		if (enemiesDefeated == levelMap->enemies)
 		{
-			menuAction = -1;
-			selectBoxPlace = 2;
-			showMenu = 1;
+			if (gameMode == 0)
+			{
+				selectBoxPlace = 2;
+				menuAction = 0;
+				showMenu = 1;
+			}
+			else if (gameMode == 1)
+			{
+				menuAction = -1;
+				selectBoxPlace = 2;
+				showMenu = 1;
+			}
 		}
 		
 		//sconfitta giocatore
 		if (tanks[0].life <= 0.0f)
 		{
 			//game over
-			menuAction = -1;
+			gameMode = 2;
+			menuAction = 2;
 			selectBoxPlace = 0;
 			showMenu = 1;
 		}
