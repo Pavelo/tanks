@@ -1098,8 +1098,7 @@ void initMenu(void)
 	loadTGA("texture/menu_levels.tga", 1001);
 	loadTGA("texture/menu_credits.tga", 1002);
 	loadTGA("texture/menu_loading.tga", 1003);
-	loadTGA("texture/menu_loading.tga", 1004);
-	loadTGA("texture/menu_loading.tga", 1005);
+	loadTGA("texture/menu_gameover.tga", 1004);
 	
 	DIR* directory = opendir("levels");
 	int i;
