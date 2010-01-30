@@ -41,5 +41,5 @@ struct _map
 typedef struct _map map;
 
 int levelList(DIR* directory, char fileName[][32]);
-map* loadLevel(char* path);
+map* loadLevel(char* path, obj* mapObs[], obj* pwup[]);
 void drawLevel(map* myMap);

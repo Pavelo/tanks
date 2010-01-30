@@ -125,6 +125,8 @@ int turretView = 0;
 int fixedView  = 0;
 map* levelMap;
 obj* objTank[20];
+obj* mapObs[30];
+obj* pwup[5];
 float enemiesDefeated;
 //stampe a video
 char stampe[80];
@@ -1145,6 +1147,34 @@ void init(void)
 	objTank[5] = (obj*) loadOBJ("obj/tank_cannon.obj");
 	objTank[6] = (obj*) loadOBJ("obj/crosshair.obj");
 	
+	//carico i modelli degli ostacoli (compreso lo sfondo)
+	mapObs[0] = (obj*) loadOBJ("obj/des_ground.obj");
+	mapObs[1] = (obj*) loadOBJ("obj/des_cactus.obj");
+	mapObs[2] = (obj*) loadOBJ("obj/des_trench_ns.obj");
+	mapObs[3] = (obj*) loadOBJ("obj/des_trench_we.obj");
+	mapObs[4] = (obj*) loadOBJ("obj/des_trench_end_n.obj");
+	mapObs[5] = (obj*) loadOBJ("obj/des_trench_end_s.obj");
+	mapObs[6] = (obj*) loadOBJ("obj/des_trench_end_w.obj");
+	mapObs[7] = (obj*) loadOBJ("obj/des_trench_end_e.obj");
+	mapObs[8] = (obj*) loadOBJ("obj/urb_ground.obj");
+	mapObs[9] = (obj*) loadOBJ("obj/urb_lamp.obj");
+	mapObs[10] = (obj*) loadOBJ("obj/urb_crate.obj");
+	mapObs[11] = (obj*) loadOBJ("obj/urb_crate.obj");
+	mapObs[12] = (obj*) loadOBJ("obj/urb_crate.obj");
+	mapObs[13] = (obj*) loadOBJ("obj/urb_crate.obj");
+	mapObs[14] = (obj*) loadOBJ("obj/urb_crate.obj");
+	mapObs[15] = (obj*) loadOBJ("obj/urb_crate.obj");
+	mapObs[16] = (obj*) loadOBJ("obj/sky.obj");
+	mapObs[17] = (obj*) loadOBJ("obj/des_wall.obj");
+	mapObs[18] = (obj*) loadOBJ("obj/des_dunes.obj");
+	mapObs[19] = (obj*) loadOBJ("obj/sky_night.obj");
+	mapObs[20] = (obj*) loadOBJ("obj/urb_wall.obj");
+	mapObs[21] = (obj*) loadOBJ("obj/urb_building_big.obj");
+	
+	pwup[0] = (obj*) loadOBJ("obj/pwup_ammo.obj");
+	pwup[1] = (obj*) loadOBJ("obj/pwup_health.obj");
+	pwup[2] = (obj*) loadOBJ("obj/pwup_quad_damage.obj");
+	
 	//calcolo le bounding box delle parti principali del carro armato
 	createBoundingBox(objTank[0]);
 	createBoundingBox(objTank[4]);
@@ -1204,7 +1234,7 @@ void loadGame(char* levelName)
 	char path[32];
 	char dir[] = "levels";
 	sprintf(path, "%s/%s", dir, levelName);
-	levelMap = loadLevel(path);
+	levelMap = loadLevel(path, mapObs, pwup);
 	
 	// spengo tutte le luci per evitare che rimangano luci attive dal livello precedente
 	glDisable(GL_LIGHT0);

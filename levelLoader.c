@@ -5,22 +5,16 @@
 #include <string.h>
 #include "levelLoader.h"
 
-map* loadLevel(char* path)
+map* loadLevel(char* path, obj* mapObs[], obj* pwup[])
 {
 	int loaded, dim, i, x, y=0;
 	char line[100];
-	obj* obs[20];
-	obj* pwup[5];
+	obj* obs[30];
 	map* myMap;
 	float3 BBpos = {0.0f, 0.0f, 0.0f};
 	float mat[16];
 	
 	myMap = (map*) malloc(sizeof(map));
-	
-	// Caricamento modelli powerup
-	pwup[0] = (obj*) loadOBJ("obj/pwup_ammo.obj");
-	pwup[1] = (obj*) loadOBJ("obj/pwup_health.obj");
-	pwup[2] = (obj*) loadOBJ("obj/pwup_quad_damage.obj");
 	
 	FILE *fp = fopen(path,"r");
 	
@@ -34,31 +28,31 @@ map* loadLevel(char* path)
                 sscanf(line, "%*c %d", &myMap->levelType);
                 if(myMap->levelType==1) //deserto
                 {
-                	myMap->sky = (obj*) loadOBJ("obj/sky.obj");
-               		myMap->background[0] = (obj*) loadOBJ("obj/des_wall.obj");
-                	myMap->background[1] = (obj*) loadOBJ("obj/des_dunes.obj");
-                    obs[0] = (obj*) loadOBJ("obj/des_ground.obj");
-                    obs[1] = (obj*) loadOBJ("obj/des_cactus.obj");
-                    obs[2] = (obj*) loadOBJ("obj/des_trench_ns.obj");
-                	obs[3] = (obj*) loadOBJ("obj/des_trench_we.obj");
-                	obs[4] = (obj*) loadOBJ("obj/des_trench_end_n.obj");
-                	obs[5] = (obj*) loadOBJ("obj/des_trench_end_s.obj");
-                	obs[6] = (obj*) loadOBJ("obj/des_trench_end_w.obj");
-                	obs[7] = (obj*) loadOBJ("obj/des_trench_end_e.obj");
+                	myMap->sky = mapObs[16];
+               		myMap->background[0] = mapObs[17];
+                	myMap->background[1] = mapObs[18];
+                    obs[0] = mapObs[0];
+                    obs[1] = mapObs[1];
+                    obs[2] = mapObs[2];
+                	obs[3] = mapObs[3];
+                	obs[4] = mapObs[4];
+                	obs[5] = mapObs[5];
+                	obs[6] = mapObs[6];
+                	obs[7] = mapObs[7];
                 }
                 else if(myMap->levelType==2) //urbano
                 {
-                	myMap->sky = (obj*) loadOBJ("obj/sky_night.obj");
-               		myMap->background[0] = (obj*) loadOBJ("obj/urb_wall.obj");
-                	myMap->background[1] = (obj*) loadOBJ("obj/urb_building_big.obj");
-                    obs[0] = (obj*) loadOBJ("obj/urb_ground.obj");
-                    obs[1] = (obj*) loadOBJ("obj/urb_lamp.obj");
-                    obs[2] = (obj*) loadOBJ("obj/urb_crate.obj");
-                	obs[3] = (obj*) loadOBJ("obj/urb_crate.obj");
-                	obs[4] = (obj*) loadOBJ("obj/urb_crate.obj");
-                	obs[5] = (obj*) loadOBJ("obj/urb_crate.obj");
-                	obs[6] = (obj*) loadOBJ("obj/urb_crate.obj");
-                	obs[7] = (obj*) loadOBJ("obj/urb_crate.obj");
+                	myMap->sky = mapObs[19];
+               		myMap->background[0] = mapObs[20];
+                	myMap->background[1] = mapObs[21];
+                    obs[0] = mapObs[8];
+                    obs[1] = mapObs[9];
+                    obs[2] = mapObs[10];
+                	obs[3] = mapObs[11];
+                	obs[4] = mapObs[12];
+                	obs[5] = mapObs[13];
+                	obs[6] = mapObs[14];
+                	obs[7] = mapObs[15];
                 }
 				
             }
