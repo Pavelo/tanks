@@ -169,9 +169,12 @@ void borderCollision(tank* t, int i)
 {
 	float dumping = 0.2f;
 	
-	// controllo su 4 vertici
-	if (!isColliding(levelMap->cm.tanksBB[i].vert[2], &levelMap->cm.border) ||
+	if (!isColliding(levelMap->cm.tanksBB[i].vert[0], &levelMap->cm.border) ||
+		!isColliding(levelMap->cm.tanksBB[i].vert[1], &levelMap->cm.border) ||
+		!isColliding(levelMap->cm.tanksBB[i].vert[2], &levelMap->cm.border) ||
 		!isColliding(levelMap->cm.tanksBB[i].vert[3], &levelMap->cm.border) ||
+        !isColliding(levelMap->cm.tanksBB[i].vert[4], &levelMap->cm.border) ||
+		!isColliding(levelMap->cm.tanksBB[i].vert[5], &levelMap->cm.border) ||
 		!isColliding(levelMap->cm.tanksBB[i].vert[6], &levelMap->cm.border) ||
 		!isColliding(levelMap->cm.tanksBB[i].vert[7], &levelMap->cm.border))
 	{
@@ -186,6 +189,12 @@ void borderCollision(tank* t, int i)
 		
 		t->v[0] *= dumping;
 		t->v[2] *= dumping;
+		
+//		sprintf(printScreen[6], "COLLISIONE COL BORDO MAPPA %i",t->state);
+		if (!isColliding(levelMap->cm.tanksBB[i].vert[0], &levelMap->cm.border) || !isColliding(levelMap->cm.tanksBB[i].vert[4], &levelMap->cm.border))
+    		t->directCollision=5;
+		else if(!isColliding(levelMap->cm.tanksBB[i].vert[1], &levelMap->cm.border) || !isColliding(levelMap->cm.tanksBB[i].vert[5], &levelMap->cm.border))
+        	t->directCollision=-5;
 	}
 }
 
@@ -314,6 +323,9 @@ int checkCollision(tank* t,float angle)
     
     float3 tankToObstacle;
     float3 tankToStraight;
+    tankToStraight.x = -distance*sin(radians(angle));
+	tankToStraight.y = 0.0f;
+	tankToStraight.z = -distance*cos(radians(angle));
     float pf;
     float3 p;
     float3 b;
@@ -332,16 +344,13 @@ int checkCollision(tank* t,float angle)
 				tankToObstacle.x = xObs - t->pos[0];
 				tankToObstacle.y = 0.0f;
 				tankToObstacle.z = zObs - t->pos[2];
-				tankToStraight.x = -distance*sin(radians(angle));
-				tankToStraight.y = 0.0f;
-				tankToStraight.z = -distance*cos(radians(angle));
 				
 				pf = dotProduct(normalize(tankToStraight),normalize(tankToObstacle));
 				pf = pf*magnitude(tankToObstacle);
 				p  = scalProduct(pf,normalize(tankToStraight));
 				b  = subtract(tankToObstacle,p);
 				
-				//verifica se c'è collisione
+				//verifica se c'è collisione con gli ostacoli
 				float check=dotProduct(p,tankToStraight); //per controllare il segno di p
 				if(magnitude(p)<magnitude(tankToStraight) && check>=0.0f && magnitude(b)<radius)
 				{
@@ -352,12 +361,15 @@ int checkCollision(tank* t,float angle)
 		}//END FOR
 	}//END FOR
     glPopMatrix();
-    
-//    if(result==1)
-//		sprintf(stampe2,"Collisione rilevataXY!");
-//    else
-//		sprintf(stampe2,"Via liberaXY!");
-    
+        
+    //verifica se c'è collisione coi bordi della mappa
+    float strX = -distance*sin(radians(angle))+t->pos[0];
+	float strZ = -distance*cos(radians(angle))+t->pos[2];
+	if(strX<levelMap->cm.border.min.x || strX>levelMap->cm.border.max.x || strZ<levelMap->cm.border.min.z || strZ>levelMap->cm.border.max.z) 
+	{  
+        result = 1;
+    }
+
     return result;
 }
 
@@ -825,9 +837,9 @@ void attackEnemy(tank *tankT,float angle,float XSign, float distance)
 		{
 			//entra in modalità collision avoidance
 			tankT->collision = 10;
-			float stepC = 30.0f;
+			float stepC = 36.0f;
 			int i;
-			for(i=1;i<5;i++)
+			for(i=1;i<9;i++)
 			{
 				//se non c'è collisione all'angolo di collisione + 10*i
 				if(checkCollision(tankT,normalize180(degrees(angle*XSign)+stepC*i))==0)
@@ -889,15 +901,16 @@ void runAway(tank *tankT,float angle,float XSign,float distance)
             else
 				//se sei fermo ruota verso la nuova posizione
 				tankT->rot = rotateTowards(angle,XSign,tankT->rot);
+				animateLeftTurn(tankT);
         }
     }
     else
     {
 		//entra in modalità collision avoidance      
-		float stepC = 30.0f;
+		float stepC = 36.0f;
 		tankT->collision = 10;
 		int i;
-		for(i=1;i<5;i++)
+		for(i=1;i<9;i++)
 		{
 			//se non c'è collisione all'angolo di collisione + 10*i
 			if(checkCollision(tankT,normalize180(degrees(angle*XSign)+stepC*i))==0)
@@ -954,22 +967,25 @@ void randomMove(tank *tankT)
 			else
 				//se sei fermo ruota verso la nuova posizione
 				tankT->rot = rotateTowards(radians(fabs(tankT->randomAngle)),getSign(tankT->randomAngle),tankT->rot);
+				animateLeftTurn(tankT);
 		}
 	}
 	else
 	{
 		//entra in modalità collision avoidance
-		float stepC = 30.0f;
+		float stepC = 36.0f;
 		tankT->collision = 10;
 		int i;
-		for(i=1;i<5;i++)
+		for(i=1;i<9;i++)
 		{
-			//se non c'è collisione all'angolo di collisione + 10*i
+			//se non c'è collisione all'angolo di collisione + 30*i
 			if(checkCollision(tankT,normalize180(tankT->randomAngle+stepC*i))==0)
 			{
 				tankT->collisionAngle = normalize180(tankT->randomAngle+stepC*i);
 				break;
 			}
+//			sprintf(printScreen[6], "ANGOLO NON TROVATO %i",i);
+			
 		}
 	}
 }
@@ -1049,10 +1065,10 @@ void planAction(tank *tankT)
         int check = checkRotationInStep(fabs(radians(tankT->collisionAngle)),getSign(tankT->collisionAngle),tankT->rot,2.0f);
         if(((tankT->speed<=-0.1f) || (tankT->speed>=0.1f)) && check==0)
         {
-            //tankT->v[0] *= 0.94f;
-            //tankT->v[2] *= 0.94f;
-            tankT->v[0] *= 0.1f;
-            tankT->v[2] *= 0.1f;
+            tankT->v[0] *= 0.94f;
+            tankT->v[2] *= 0.94f;
+            //tankT->v[0] *= 0.1f;
+            //tankT->v[2] *= 0.1f;
         }
         else
         {
@@ -1063,7 +1079,10 @@ void planAction(tank *tankT)
 			}
 			else 
 			{
+                tankT->v[0] = 0.0f;
+                tankT->v[2] = 0.0f;
 				tankT->rot = rotateTowards(fabs(radians(tankT->collisionAngle)),getSign(tankT->collisionAngle),tankT->rot);
+				animateLeftTurn(tankT);
 			}
         }
     }
@@ -1180,7 +1199,7 @@ void init(void)
 	createBoundingBox(objTank[4]);
 	createBoundingBox(objTank[5]);
 	
-	objTank[5]->bb.min.z -= 1.7f;
+	objTank[5]->bb.min.z -= 2.0f;
 	
 }
 
@@ -1631,12 +1650,6 @@ void displayGame(void)
 	glPopMatrix();
 	orthogonalEnd();
 	
-	//disegno ostacolone
-	glPushMatrix();
-	glTranslatef(20.0f, 0.0f, 20.0f);
-	//glutWireSphere(5.0f, 10, 10);
-	glPopMatrix();
-	
 	//disegno mirino
 	if(turretView==1)
 	{
@@ -1879,7 +1892,7 @@ void idle(void)
 			//calcolo della fisica dei carri armati
 			//calcolo della forza di attrito [Fk = fC * g * m]
 			tanks[i].frictionForce = 9.8f * frictionCoeff * tanks[i].mass;
-			tanks[i].speed = tanks[i].v[0]*sin(tanks[i].rot*M_PI/180.0f) + tanks[i].v[2]*cos(tanks[i].rot*M_PI/180.0f);
+			//tanks[i].speed = tanks[i].v[0]*sin(tanks[i].rot*M_PI/180.0f) + tanks[i].v[2]*cos(tanks[i].rot*M_PI/180.0f);
 			if((tanks[i].speed>=-0.1f) && (tanks[i].speed<=0.1f) && (tanks[i].enginePower<=0.0f))
 			{
 				tanks[i].frictionForce = 0.0f;
@@ -1912,11 +1925,25 @@ void idle(void)
 			
 			// S = So + vo*t + a*t*t*0.5
 			//calcolo delle equazioni del moto
+			float oldP0 = tanks[i].pos[0];
+			float oldP2 = tanks[i].pos[2];
+			float oldV0 = tanks[i].v[0];
+			float oldV2 = tanks[i].v[2];
 			tanks[i].pos[0] += tanks[i].v[0]*deltaT + tanks[i].a[0]*deltaT*deltaT*0.5f;
 			tanks[i].pos[2] += tanks[i].v[2]*deltaT + tanks[i].a[2]*deltaT*deltaT*0.5f;
 			tanks[i].v[0] += tanks[i].a[0] * deltaT; //velocità finale
 			tanks[i].v[2] += tanks[i].a[2] * deltaT; //velocità finale
-			
+			//limitatore velocità
+			tanks[i].speed = tanks[i].v[0]*sin(tanks[i].rot*M_PI/180.0f) + tanks[i].v[2]*cos(tanks[i].rot*M_PI/180.0f);
+			float maxSpeedS = -25.0f;
+			float maxSpeedR = 10.0f;
+            if(tanks[i].speed<maxSpeedS || tanks[i].speed>maxSpeedR)
+			{
+            tanks[i].v[0] = oldV0;
+            tanks[i].v[2] = oldV2;
+            tanks[i].pos[0] = oldP0 + oldV0*deltaT;
+            tanks[i].pos[2] = oldP2 + oldV2*deltaT;
+            }		
 			tanks[i].enginePower = 0.0f;
 			
 			// COLLISIONI
